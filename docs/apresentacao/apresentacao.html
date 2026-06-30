@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>POC Vivo — Integração Arquitetural de Biometria Facial</title>
+<style>
+  :root {
+    --vivo-purple: #660099;
+    --vivo-purple-dark: #4a0077;
+    --vivo-purple-light: #9b3fc8;
+    --vivo-purple-pale: #f3e5f5;
+    --vivo-purple-bg: #1a0033;
+    --accent-green: #00c896;
+    --accent-blue: #1e90ff;
+    --accent-orange: #ff6b35;
+    --accent-red: #e63946;
+    --white: #ffffff;
+    --gray-100: #f8f9fa;
+    --gray-200: #e9ecef;
+    --gray-700: #495057;
+    --gray-900: #212529;
+    --slide-w: 1280px;
+    --slide-h: 720px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: #0d0d1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px 0 60px;
+    color: var(--white);
+  }
+
+  /* ── NAVIGATION ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(26, 0, 51, 0.95);
+    border-bottom: 2px solid var(--vivo-purple);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+  }
+  nav .brand {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--vivo-purple-light);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  nav .nav-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  nav button {
+    background: var(--vivo-purple);
+    border: none;
+    color: #fff;
+    padding: 6px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  nav button:hover { background: var(--vivo-purple-light); }
+  nav button:disabled { background: #333; cursor: default; }
+  #slide-counter {
+    font-size: 12px;
+    color: #aaa;
+    min-width: 60px;
+    text-align: center;
+  }
+
+  /* ── SLIDES WRAPPER ── */
+  .slides-container {
+    margin-top: 64px;
+    width: 100%;
+    max-width: var(--slide-w);
+  }
+
+  .slide {
+    display: none;
+    width: var(--slide-w);
+    min-height: var(--slide-h);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(102, 0, 153, 0.4);
+    margin: 0 auto 16px;
+    position: relative;
+  }
+  .slide.active { display: flex; }
+
+  /* ── SLIDE TYPES ── */
+
+  /* COVER */
+  .slide-cover {
+    background: linear-gradient(135deg, #0d001a 0%, #1a0033 40%, #2d0060 70%, #660099 100%);
+    padding: 60px 80px;
+    flex-direction: column;
+    justify-content: center;
+    min-height: var(--slide-h);
+  }
+  .slide-cover::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background:
+      radial-gradient(ellipse at 80% 20%, rgba(102,0,153,0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 10% 80%, rgba(0,200,150,0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .cover-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent-green);
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .cover-title {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--white);
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .cover-title span { color: var(--vivo-purple-light); }
+  .cover-subtitle {
+    font-size: 20px;
+    color: rgba(255,255,255,0.7);
+    position: relative;
+    margin-bottom: 40px;
+    font-weight: 300;
+  }
+  .cover-divider {
+    width: 60px;
+    height: 4px;
+    background: var(--vivo-purple-light);
+    border-radius: 2px;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 40px;
+    position: relative;
+  }
+  .cover-meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .cover-meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.4); }
+  .cover-meta-value { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .cover-logo-area {
+    position: absolute;
+    right: 80px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .vivo-badge {
+    background: var(--vivo-purple);
+    color: white;
+    font-size: 28px;
+    font-weight: 900;
+    padding: 14px 28px;
+    border-radius: 12px;
+    letter-spacing: -1px;
+    box-shadow: 0 8px 30px rgba(102,0,153,0.5);
+  }
+  .tech-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    max-width: 200px;
+  }
+  .tech-badge {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.7);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* SECTION HEADER */
+  .slide-section {
+    background: linear-gradient(135deg, var(--vivo-purple-dark) 0%, var(--vivo-purple) 100%);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: var(--slide-h);
+    padding: 60px;
+  }
+  .section-number {
+    font-size: 80px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.12);
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+  .section-desc { font-size: 16px; color: rgba(255,255,255,0.6); max-width: 500px; }
+
+  /* CONTENT SLIDE */
+  .slide-content {
+    background: #0f0f1f;
+    min-height: var(--slide-h);
+    flex-direction: column;
+  }
+  .slide-header {
+    background: linear-gradient(90deg, var(--vivo-purple-dark), #3a006a);
+    padding: 22px 48px;
+    border-bottom: 3px solid var(--vivo-purple-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .slide-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+  }
+  .slide-header .slide-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--vivo-purple-light);
+    background: rgba(102,0,153,0.3);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--vivo-purple);
+  }
+  .slide-body {
+    flex: 1;
+    padding: 36px 48px;
+    display: flex;
+    gap: 32px;
+  }
+  .slide-body.cols-2 > * { flex: 1; }
+  .slide-body.single { flex-direction: column; }
+
+  /* CARDS */
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 14px;
+  }
+  .card:last-child { margin-bottom: 0; }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--vivo-purple-light);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-body { font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.6; }
+  .card.highlight { border-color: var(--vivo-purple); background: rgba(102,0,153,0.12); }
+  .card.green { border-color: var(--accent-green); background: rgba(0,200,150,0.08); }
+  .card.orange { border-color: var(--accent-orange); background: rgba(255,107,53,0.08); }
+  .card.red { border-color: var(--accent-red); background: rgba(230,57,70,0.08); }
+
+  /* ARCH FLOW */
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 20px 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .arch-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 110px;
+  }
+  .arch-box {
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.3;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    min-width: 100px;
+  }
+  .arch-box.purple { background: var(--vivo-purple); border: 2px solid var(--vivo-purple-light); color: #fff; }
+  .arch-box.blue { background: #1168bd; border: 2px solid #4a90d9; color: #fff; }
+  .arch-box.green { background: #0b6e4f; border: 2px solid #00c896; color: #fff; }
+  .arch-box.gray { background: #566573; border: 2px solid #8e9eaa; color: #fff; }
+  .arch-box.orange { background: #d35400; border: 2px solid #ff6b35; color: #fff; }
+  .arch-box.dark { background: #2d3436; border: 2px solid #636e72; color: #fff; }
+  .arch-label { font-size: 10px; color: rgba(255,255,255,0.45); text-align: center; line-height: 1.3; }
+  .arch-arrow {
+    font-size: 20px;
+    color: rgba(255,255,255,0.35);
+    margin: 0 4px;
+    flex-shrink: 0;
+    padding-bottom: 20px;
+  }
+
+  /* SECURITY LAYERS */
+  .sec-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .sec-layer {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border-left: 4px solid var(--vivo-purple);
+  }
+  .sec-layer-num {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--vivo-purple-light);
+    min-width: 32px;
+  }
+  .sec-layer-title { font-size: 13px; font-weight: 700; color: #fff; }
+  .sec-layer-desc { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+  /* OBSERVABILITY PILLARS */
+  .obs-pillars {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+  }
+  .obs-pillar {
+    flex: 1;
+    padding: 22px 18px;
+    border-radius: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+  .obs-pillar.metrics { background: rgba(30,144,255,0.12); border: 1px solid #1e90ff; }
+  .obs-pillar.logs    { background: rgba(0,200,150,0.12); border: 1px solid #00c896; }
+  .obs-pillar.traces  { background: rgba(255,107,53,0.12); border: 1px solid #ff6b35; }
+  .obs-icon { font-size: 32px; }
+  .obs-name { font-size: 15px; font-weight: 700; color: #fff; }
+  .obs-tool { font-size: 12px; font-weight: 600; opacity: 0.7; }
+  .obs-items { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.7; }
+
+  /* TIMELINE / PHASES */
+  .phases {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .phase {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+  }
+  .phase-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .phase-1 .phase-dot { background: #0b6e4f; }
+  .phase-2 .phase-dot { background: var(--vivo-purple); }
+  .phase-3 .phase-dot { background: #d35400; }
+  .phase-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .phase-period { font-size: 11px; font-weight: 600; color: var(--accent-green); margin-bottom: 6px; }
+  .phase-items { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.7; }
+
+  /* TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .data-table th {
+    background: var(--vivo-purple);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .data-table td {
+    padding: 9px 14px;
+    color: rgba(255,255,255,0.75);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .data-table tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
+  .data-table .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(102,0,153,0.3);
+    color: var(--vivo-purple-light);
+    border: 1px solid var(--vivo-purple);
+  }
+
+  /* LINK BUTTONS */
+  .link-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+  .link-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(102,0,153,0.4);
+    background: rgba(102,0,153,0.1);
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.2s;
+  }
+  .link-btn:hover {
+    background: rgba(102,0,153,0.25);
+    border-color: var(--vivo-purple-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102,0,153,0.3);
+  }
+  .link-btn .link-icon { font-size: 20px; flex-shrink: 0; }
+  .link-btn .link-text { font-size: 12px; }
+  .link-btn .link-name { font-weight: 700; display: block; }
+  .link-btn .link-url { font-size: 10px; color: rgba(255,255,255,0.45); display: block; margin-top: 2px; }
+  .link-btn.green { border-color: rgba(0,200,150,0.4); background: rgba(0,200,150,0.08); }
+  .link-btn.blue  { border-color: rgba(30,144,255,0.4); background: rgba(30,144,255,0.08); }
+  .link-btn.orange{ border-color: rgba(255,107,53,0.4); background: rgba(255,107,53,0.08); }
+
+  /* COMMAND BOX */
+  .cmd-box {
+    background: #0a0a14;
+    border: 1px solid rgba(102,0,153,0.4);
+    border-left: 4px solid var(--vivo-purple-light);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'Consolas', 'Fira Code', monospace;
+    font-size: 12px;
+    color: #00c896;
+    line-height: 2;
+    margin-top: 12px;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .cmd-comment { color: #636e72; }
+  .cmd-flag { color: #74b9ff; }
+
+  /* KEY-VALUE */
+  .kv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+  .kv-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .kv-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.35); margin-bottom: 4px; }
+  .kv-value { font-size: 13px; font-weight: 600; color: var(--vivo-purple-light); }
+
+  /* PROGRESS BAR */
+  .progress-item {
+    margin-bottom: 14px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 6px;
+  }
+  .progress-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--vivo-purple), var(--vivo-purple-light));
+  }
+  .progress-fill.green { background: linear-gradient(90deg, #0b6e4f, #00c896); }
+
+  /* CALLOUT */
+  .callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    background: rgba(102,0,153,0.15);
+    border: 1px solid var(--vivo-purple);
+    margin-top: 16px;
+  }
+  .callout-icon { font-size: 24px; flex-shrink: 0; }
+  .callout-text { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.6; }
+  .callout.green { background: rgba(0,200,150,0.12); border-color: #00c896; }
+
+  /* THUMBNAIL NAV */
+  .slide-thumbnails {
+    max-width: var(--slide-w);
+    margin: 16px auto 0;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0 20px;
+  }
+  .thumb {
+    width: 60px;
+    height: 34px;
+    background: rgba(102,0,153,0.3);
+    border: 2px solid rgba(102,0,153,0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .thumb:hover, .thumb.active {
+    background: var(--vivo-purple);
+    border-color: var(--vivo-purple-light);
+    color: #fff;
+  }
+
+  @media (max-width: 1320px) {
+    .slide, .slides-container {
+      max-width: 98vw;
+    }
+    .slide { width: 98vw; }
+    .cover-title { font-size: 38px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">📱 Vivo / Telefônica — POC Biometria</div>
+  <div class="nav-controls">
+    <button id="btn-prev" onclick="navigate(-1)" disabled>◀ Anterior</button>
+    <span id="slide-counter">1 / 17</span>
+    <button id="btn-next" onclick="navigate(1)">Próximo ▶</button>
+  </div>
+</nav>
+
+<div class="slides-container">
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 1 — CAPA -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-cover active" id="slide-1">
+    <div class="cover-eyebrow">Case Técnico · Arquiteto de Integração</div>
+    <div class="cover-title">
+      Integração Arquitetural<br>
+      de <span>Biometria Facial</span>
+    </div>
+    <div class="cover-subtitle">
+      Exposição segura de sistema SOAP legado via API Gateway moderno
+    </div>
+    <div class="cover-divider"></div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <span class="cover-meta-label">Empresa</span>
+        <span class="cover-meta-value">Vivo / Telefônica Brasil</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="cover-meta-label">Data</span>
+        <span class="cover-meta-value">Junho 2026</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="cover-meta-label">Tipo</span>
+        <span class="cover-meta-value">Proof of Concept</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="cover-meta-label">Status</span>
+        <span class="cover-meta-value" style="color:#00c896">✓ Implementado e Testado</span>
+      </div>
+    </div>
+    <div class="cover-logo-area">
+      <div class="vivo-badge">vivo</div>
+      <div class="tech-badges">
+        <span class="tech-badge">Java 17</span>
+        <span class="tech-badge">Spring Boot 3.2</span>
+        <span class="tech-badge">OAuth2 / JWT</span>
+        <span class="tech-badge">Spring Cloud GW</span>
+        <span class="tech-badge">Clean Arch</span>
+        <span class="tech-badge">SOAP / REST</span>
+        <span class="tech-badge">Prometheus</span>
+        <span class="tech-badge">Grafana</span>
+        <span class="tech-badge">Zipkin</span>
+        <span class="tech-badge">LGPD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 2 — CONTEXTO -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-2">
+    <div class="slide-header">
+      <h2>Contexto e Desafio</h2>
+      <span class="slide-tag">Problema</span>
+    </div>
+    <div class="slide-body cols-2">
+      <div>
+        <div class="card highlight">
+          <div class="card-title">🏛️ Sistema Legado SOAP</div>
+          <div class="card-body">Sistema legado Oracle + SOAP armazena dados de biometria facial de clientes Vivo. Não possui autenticação moderna, não emite métricas e não pode ser modificado sem alto risco.</div>
+        </div>
+        <div class="card orange">
+          <div class="card-title">⚠️ Problema</div>
+          <div class="card-body">Parceiros de negócio precisam consultar dados biométricos via REST/JSON com autenticação OAuth2 — protocolo e formato incompatíveis com o legado SOAP.</div>
+        </div>
+        <div class="card red">
+          <div class="card-title">🔒 Restrição LGPD</div>
+          <div class="card-body">Biometria facial = dado sensível (Art. 11 Lei 13.709/2018). CPF = dado pessoal. Nunca podem ser logados em claro. Acesso deve ser auditado com correlationId.</div>
+        </div>
+      </div>
+      <div>
+        <div class="card green">
+          <div class="card-title">✅ Solução Proposta</div>
+          <div class="card-body">Plataforma de integração com 3 serviços: Gateway (borda OAuth2), Core API (REST + ACL), Legacy SOAP (adaptado). Defesa em profundidade com segredos internos.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">🎯 Objetivos</div>
+          <div class="card-body">
+            • Expor SOAP legado via REST/JSON moderno<br>
+            • OAuth2 Client Credentials (JWT RS256)<br>
+            • Zero acesso direto ao legado<br>
+            • Observabilidade completa (métricas + logs + traces)<br>
+            • Estratégia de migração sem big bang<br>
+            • Conformidade LGPD desde o design
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 3 — ARQUITETURA GERAL -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-3">
+    <div class="slide-header">
+      <h2>Arquitetura da Solução</h2>
+      <span class="slide-tag">C2 Container</span>
+    </div>
+    <div class="slide-body single">
+      <div class="arch-flow" style="margin: 10px 0 20px;">
+        <div class="arch-node">
+          <div class="arch-box blue">Parceiro<br>Externo</div>
+          <div class="arch-label">JWT Bearer<br>REST/HTTPS</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-box purple">biometria-<br>gateway<br>:8080</div>
+          <div class="arch-label">Spring Cloud<br>Gateway<br>JWT + Filtros</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-box green">biometria-<br>core-api<br>:8082</div>
+          <div class="arch-label">REST + ACL<br>Clean Arch<br>X-GW-Secret</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-box gray">biometria-<br>legacy-soap<br>:8083</div>
+          <div class="arch-label">Spring-WS<br>SOAP<br>X-Core-Secret</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-box dark">H2<br>In-Memory</div>
+          <div class="arch-label">Simula Oracle<br>10 CPFs<br>seed válidos</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:24px; margin-top:8px;">
+        <div style="flex:1">
+          <div class="card highlight">
+            <div class="card-title">🔑 Identity Provider</div>
+            <div class="card-body">Keycloak 24 (:8081) · Realm <code style="color:#c0a;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">vivo-poc</code> · Client Credentials · JWT RS256 · Scope <code style="color:#c0a;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">biometria:read</code></div>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div class="card" style="border-color:#e6522c;background:rgba(230,82,44,0.08)">
+            <div class="card-title" style="color:#e6522c">📊 Observabilidade</div>
+            <div class="card-body">Prometheus (:9090) · Grafana (:3000) · Loki (:3100) · Zipkin (:9411) · Promtail · traceId B3 propagado em todas as camadas</div>
+          </div>
+        </div>
+      </div>
+      <div class="callout green" style="margin-top:12px;">
+        <span class="callout-icon">🛡️</span>
+        <span class="callout-text"><strong>Defesa em profundidade:</strong> Parceiro autentica com JWT no Gateway. Gateway injeta <code>X-Gateway-Secret</code> no Core API. Core API injeta <code>X-Core-Secret</code> no SOAP legado. Acesso direto a qualquer serviço interno retorna 403/SOAP Fault sem o secret correto.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 4 — DIAGRAMA C1: SYSTEM CONTEXT -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-4">
+    <div class="slide-header">
+      <h2>C1 — System Context</h2>
+      <span class="slide-tag">C4 Model · Nível 1</span>
+    </div>
+    <div class="slide-body single" style="padding:20px 32px; align-items:center; justify-content:center;">
+      <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;">Visão do sistema como uma caixa preta — atores externos, sistemas vizinhos e relações de alto nível</p>
+      <img src="../diagrams/c4/C1-System-Context.png"
+           alt="C1 System Context — POC Vivo Biometria"
+           style="max-width:100%;max-height:580px;border-radius:8px;border:1px solid rgba(102,0,153,0.3);box-shadow:0 8px 30px rgba(0,0,0,0.5);object-fit:contain;" />
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 5 — DIAGRAMA C2: CONTAINER -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-5">
+    <div class="slide-header">
+      <h2>C2 — Container Diagram</h2>
+      <span class="slide-tag">C4 Model · Nível 2</span>
+    </div>
+    <div class="slide-body single" style="padding:20px 32px; align-items:center; justify-content:center;">
+      <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;">Containers: biometria-gateway · biometria-core-api · biometria-legacy-soap · H2 · Keycloak · Stack de Observabilidade</p>
+      <img src="../diagrams/c4/C2-Container.drawio.png"
+           alt="C2 Container Diagram — POC Vivo Biometria"
+           style="max-width:100%;max-height:580px;border-radius:8px;border:1px solid rgba(102,0,153,0.3);box-shadow:0 8px 30px rgba(0,0,0,0.5);object-fit:contain;" />
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 6 — DIAGRAMA C3: COMPONENTS CORE API -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-6">
+    <div class="slide-header">
+      <h2>C3 — Components: biometria-core-api</h2>
+      <span class="slide-tag">C4 Model · Nível 3</span>
+    </div>
+    <div class="slide-body single" style="padding:16px 32px; align-items:center; justify-content:center;">
+      <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:8px;">Clean Architecture com 4 camadas: Infrastructure · Application · Domain · Adapter/ACL</p>
+      <img src="../diagrams/c4/C3-Component-Core-API.drawio.png"
+           alt="C3 Component Diagram — biometria-core-api"
+           style="max-width:100%;max-height:570px;border-radius:8px;border:1px solid rgba(102,0,153,0.3);box-shadow:0 8px 30px rgba(0,0,0,0.5);object-fit:contain;" />
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 7 — DIAGRAMA DE SEQUÊNCIA -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-7">
+    <div class="slide-header">
+      <h2>Sequência — Consulta de Biometria (Fluxo Feliz)</h2>
+      <span class="slide-tag">Sequence Diagram</span>
+    </div>
+    <div class="slide-body single" style="padding:16px 32px; align-items:center; justify-content:center;">
+      <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:8px;">12 passos em 5 fases: Auth OAuth2 → Gateway JWT → Core API Secret → SOAP Interceptor → Resposta + Observabilidade</p>
+      <img src="../diagrams/sequence/consultar-biometria-fluxo-feliz.drawio.png"
+           alt="Sequence Diagram — Consulta de Biometria Fluxo Feliz"
+           style="max-width:100%;max-height:570px;border-radius:8px;border:1px solid rgba(102,0,153,0.3);box-shadow:0 8px 30px rgba(0,0,0,0.5);object-fit:contain;" />
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 8 — FLUXO DE AUTENTICAÇÃO -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-8">
+    <div class="slide-header">
+      <h2>Fluxo de Consulta — Sequência Completa</h2>
+      <span class="slide-tag">Sequência</span>
+    </div>
+    <div class="slide-body single">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th style="width:120px">Ator → Destino</th>
+            <th>Ação</th>
+            <th style="width:160px">Segurança Aplicada</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Parceiro → Keycloak</td><td>POST /token com client_id + client_secret (client_credentials)</td><td><span class="tag">mTLS</span></td></tr>
+          <tr><td>2</td><td>Keycloak → Parceiro</td><td>JWT assinado RS256, expiry 5min, scope biometria:read</td><td><span class="tag">RS256</span></td></tr>
+          <tr><td>3</td><td>Parceiro → Gateway</td><td>GET /api/v1/biometria/{cpf} + Authorization: Bearer JWT</td><td><span class="tag">JWT Bearer</span></td></tr>
+          <tr><td>4</td><td>Gateway → Keycloak</td><td>Valida JWT via JWKS (/realms/vivo-poc/protocol/openid-connect/certs)</td><td><span class="tag">JWKS RS256</span></td></tr>
+          <tr><td>5</td><td>Gateway → Core API</td><td>Roteia req + X-Gateway-Secret + X-Correlation-Id gerado</td><td><span class="tag">X-GW-Secret</span></td></tr>
+          <tr><td>6</td><td>Core API filter</td><td>GatewaySecretFilter valida X-Gateway-Secret → 403 se ausente</td><td><span class="tag">Filter Order -1</span></td></tr>
+          <tr><td>7</td><td>Core API domain</td><td>Cpf.of(cpf) valida dígito verificador → ConsultarBiometriaUseCase</td><td><span class="tag">Domain VO</span></td></tr>
+          <tr><td>8</td><td>Core API → SOAP</td><td>SoapBiometriaClient + X-Core-Secret + traceId B3 propagado</td><td><span class="tag">X-Core-Secret</span></td></tr>
+          <tr><td>9</td><td>SOAP → H2</td><td>InternalSecretInterceptor valida → SELECT biometria WHERE cpf=?</td><td><span class="tag">SOAP Interceptor</span></td></tr>
+          <tr><td>10</td><td>Core API → GW → Parceiro</td><td>BiometriaResponse + X-Correlation-Id no response</td><td><span class="tag">CPF mascarado</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 9 — CLEAN ARCHITECTURE -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-9">
+    <div class="slide-header">
+      <h2>Clean Architecture — biometria-core-api</h2>
+      <span class="slide-tag">C3 Component</span>
+    </div>
+    <div class="slide-body cols-2">
+      <div>
+        <div class="card" style="border-color:#c0392b; background:rgba(192,57,43,0.1)">
+          <div class="card-title" style="color:#e74c3c">⬡ Infrastructure Layer</div>
+          <div class="card-body">
+            <strong>GatewaySecretFilter</strong> — @Order(HIGHEST_PRECEDENCE+1)<br>
+            <strong>CorrelationIdFilter</strong> — propaga X-Correlation-Id via MDC<br>
+            <strong>RequestLoggingFilter</strong> — log JSON estruturado por req<br>
+            <strong>BiometriaController</strong> — REST GET /api/v1/biometria/{cpf}<br>
+            <strong>GlobalExceptionHandler</strong> — RFC 7807 ProblemDetail<br>
+            <strong>BiometriaMetrics</strong> — Counter + Timer Micrometer
+          </div>
+        </div>
+        <div class="card" style="border-color:#0b6e4f; background:rgba(11,110,79,0.1)">
+          <div class="card-title" style="color:#00c896">⬡ Application Layer</div>
+          <div class="card-body">
+            <strong>ConsultarBiometriaUseCase</strong> — orquestra domínio + port<br>
+            <strong>ValidarCpfUseCase</strong> — valida VO Cpf<br>
+            <strong>BiometriaLegadoPort</strong> — interface de saída (Port)
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="border-color:#6c5ce7; background:rgba(108,92,231,0.1)">
+          <div class="card-title" style="color:#a29bfe">⬡ Domain Layer</div>
+          <div class="card-body">
+            <strong>Cpf</strong> — Value Object, valida dígito verificador<br>
+            <strong>Biometria</strong> — Aggregate Root, dado sensível LGPD<br>
+            <em>Zero dependências de frameworks</em>
+          </div>
+        </div>
+        <div class="card" style="border-color:#d35400; background:rgba(211,84,0,0.1)">
+          <div class="card-title" style="color:#ff6b35">⬡ Adapter / ACL Layer</div>
+          <div class="card-body">
+            <strong>SoapBiometriaLegadoAdapter</strong> — implements Port<br>
+            <strong>SoapBiometriaClient</strong> — WebServiceGatewaySupport, timeout 5s<br>
+            <strong>SoapFaultTranslator</strong> — SOAP Fault → exceção de domínio<br>
+            <strong>SoapBiometriaMapper</strong> — ACL: isola contrato SOAP<br>
+            <strong>LegadoSoapHealthIndicator</strong> — actuator/health
+          </div>
+        </div>
+        <div class="callout" style="margin-top:0">
+          <span class="callout-icon">🧱</span>
+          <span class="callout-text">Nenhuma classe de domínio conhece Spring, SOAP ou HTTP. A inversão de dependência garante testabilidade e permite substituir o SOAP por outro adapter na migração.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 10 — PADRÕES DE PROJETO -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-10">
+    <div class="slide-header">
+      <h2>Padrões de Projeto Aplicados</h2>
+      <span class="slide-tag">Design Patterns</span>
+    </div>
+    <div class="slide-body single" style="padding:20px 40px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+
+        <div class="card" style="border-color:rgba(102,0,153,.5);background:rgba(102,0,153,.1);margin:0">
+          <div class="card-title" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#a29bfe">Arquiteturais</div>
+          <div class="card-body" style="font-size:12px;line-height:1.7">
+            <strong style="color:#d8ceff">Clean Arch / Ports &amp; Adapters</strong><br>
+            <span style="color:rgba(255,255,255,.55)">domain &rarr; port (interface) &rarr; adapter SOAP</span><br><br>
+            <strong style="color:#d8ceff">API Gateway</strong><br>
+            <span style="color:rgba(255,255,255,.55)">ponto &uacute;nico de entrada JWT + roteamento</span><br><br>
+            <strong style="color:#d8ceff">Strangler Fig</strong><br>
+            <span style="color:rgba(255,255,255,.55)">migra&ccedil;&atilde;o SOAP &rarr; REST em 3 fases</span>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:rgba(0,200,150,.4);background:rgba(0,200,150,.07);margin:0">
+          <div class="card-title" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#00c896">GoF &mdash; Estruturais</div>
+          <div class="card-body" style="font-size:12px;line-height:1.7">
+            <strong style="color:#b2f5e8">Adapter</strong><br>
+            <span style="color:rgba(255,255,255,.55)">SoapBiometriaLegadoAdapter &rarr; BiometriaLegadoPort</span><br><br>
+            <strong style="color:#b2f5e8">Facade</strong><br>
+            <span style="color:rgba(255,255,255,.55)">SoapBiometriaClient esconde WebServiceTemplate</span><br><br>
+            <strong style="color:#b2f5e8">Decorator</strong><br>
+            <span style="color:rgba(255,255,255,.55)">BiometriaMetrics.registrarApiLatencia(Supplier)</span>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:rgba(255,165,0,.4);background:rgba(255,165,0,.07);margin:0">
+          <div class="card-title" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#ffd580">GoF &mdash; Comportamentais</div>
+          <div class="card-body" style="font-size:12px;line-height:1.7">
+            <strong style="color:#ffe8a1">Chain of Responsibility</strong><br>
+            <span style="color:rgba(255,255,255,.55)">Filter chains: security &rarr; logging &rarr; metrics</span><br><br>
+            <strong style="color:#ffe8a1">Template Method</strong><br>
+            <span style="color:rgba(255,255,255,.55)">OncePerRequestFilter &rarr; GatewaySecretFilter</span><br><br>
+            <strong style="color:#ffe8a1">Strategy</strong><br>
+            <span style="color:rgba(255,255,255,.55)">BiometriaLegadoPort &mdash; UseCase n&atilde;o sabe o impl</span>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:rgba(30,144,255,.4);background:rgba(30,144,255,.07);margin:0">
+          <div class="card-title" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#4a90d9">DDD</div>
+          <div class="card-body" style="font-size:12px;line-height:1.7">
+            <strong style="color:#a8c8f0">Value Object</strong><br>
+            <span style="color:rgba(255,255,255,.55)">Cpf &mdash; imutu&aacute;vel, auto-valida, toString() mascarado</span><br><br>
+            <strong style="color:#a8c8f0">Anti-Corruption Layer</strong><br>
+            <span style="color:rgba(255,255,255,.55)">SoapMapper + FaultTranslator isolam contrato SOAP</span>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:rgba(231,76,60,.4);background:rgba(231,76,60,.07);margin:0">
+          <div class="card-title" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e74c3c">Seguran&ccedil;a</div>
+          <div class="card-body" style="font-size:12px;line-height:1.7">
+            <strong style="color:#f5a9a0">Defense in Depth</strong><br>
+            <span style="color:rgba(255,255,255,.55)">JWT &rarr; X-Gateway-Secret &rarr; X-Core-Secret</span><br><br>
+            <strong style="color:#f5a9a0">Interceptor</strong><br>
+            <span style="color:rgba(255,255,255,.55)">InternalSecretInterceptor valida X-Core-Secret no SOAP</span>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:rgba(255,107,53,.4);background:rgba(255,107,53,.07);margin:0">
+          <div class="card-title" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#ff6b35">Observabilidade</div>
+          <div class="card-body" style="font-size:12px;line-height:1.7">
+            <strong style="color:#ffbb9a">Correlation ID</strong><br>
+            <span style="color:rgba(255,255,255,.55)">X-Correlation-Id propagado Gateway &rarr; Core &rarr; SOAP</span><br><br>
+            <strong style="color:#ffbb9a">Health Indicator</strong><br>
+            <span style="color:rgba(255,255,255,.55)">LegadoSoapHealthIndicator &rarr; Grafana UP/DOWN</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="callout" style="margin-top:12px">
+        <span class="callout-icon">&#128196;</span>
+        <span class="callout-text">Refer&ecirc;ncia completa com exemplos de c&oacute;digo e justificativas: <strong>docs/PADROES-DE-PROJETO.md</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 11 — SEGURANÇA -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-11">
+    <div class="slide-header">
+      <h2>Modelo de Segurança — Defesa em Profundidade</h2>
+      <span class="slide-tag">Security</span>
+    </div>
+    <div class="slide-body single">
+      <div class="sec-layers">
+        <div class="sec-layer">
+          <div class="sec-layer-num">1</div>
+          <div>
+            <div class="sec-layer-title">OAuth2 / JWT RS256 — Keycloak 24</div>
+            <div class="sec-layer-desc">Client Credentials · Scope biometria:read · Validação stateless via JWKS · Expiração 5min · Realm vivo-poc</div>
+          </div>
+        </div>
+        <div class="sec-layer">
+          <div class="sec-layer-num">2</div>
+          <div>
+            <div class="sec-layer-title">Spring Cloud Gateway — Filtro de Roteamento</div>
+            <div class="sec-layer-desc">GatewaySecurityConfig: /api/v1/** exige authenticated(). /management/** e /actuator/** permitAll() apenas na rede interna. anyExchange().denyAll()</div>
+          </div>
+        </div>
+        <div class="sec-layer">
+          <div class="sec-layer-num">3</div>
+          <div>
+            <div class="sec-layer-title">X-Gateway-Secret — Core API (GatewaySecretFilter)</div>
+            <div class="sec-layer-desc">Header interno injetado pelo Gateway em cada request. @Order(HIGHEST_PRECEDENCE+1) — verifica antes de qualquer controller. 403 se ausente ou inválido. Impede bypass direto.</div>
+          </div>
+        </div>
+        <div class="sec-layer">
+          <div class="sec-layer-num">4</div>
+          <div>
+            <div class="sec-layer-title">X-Core-Secret — Legacy SOAP (InternalSecretInterceptor)</div>
+            <div class="sec-layer-desc">EndpointInterceptor no biometria-legacy-soap. Retorna SOAP Fault UNAUTHORIZED se header ausente ou inválido. Impede acesso direto ao SOAP legado por qualquer cliente.</div>
+          </div>
+        </div>
+        <div class="sec-layer">
+          <div class="sec-layer-num">5</div>
+          <div>
+            <div class="sec-layer-title">LGPD — Privacy by Design</div>
+            <div class="sec-layer-desc">CpfMasker: *********XX em todos os logs · imagemBase64 nunca logada · JWT/secrets nunca logados · correlationId em toda linha de log para rastreabilidade de auditoria</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 12 — OBSERVABILIDADE -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-12">
+    <div class="slide-header">
+      <h2>Observabilidade — Três Pilares</h2>
+      <span class="slide-tag">Observability</span>
+    </div>
+    <div class="slide-body single">
+      <div class="obs-pillars">
+        <div class="obs-pillar metrics">
+          <div class="obs-icon">📊</div>
+          <div class="obs-name">Métricas</div>
+          <div class="obs-tool">Prometheus + Grafana</div>
+          <div class="obs-items">
+            biometria.consultas.total<br>
+            biometria.legado.latencia<br>
+            soap.requests.total<br>
+            gateway.requests.*<br>
+            jvm.memory / jvm.threads<br>
+            <a href="http://localhost:3000/d/vivo-biometria-poc" target="_blank" style="color:#4a90d9;font-size:11px;">→ Abrir Dashboard Grafana</a>
+          </div>
+        </div>
+        <div class="obs-pillar logs">
+          <div class="obs-icon">📋</div>
+          <div class="obs-name">Logs</div>
+          <div class="obs-tool">Loki + Promtail + Logback</div>
+          <div class="obs-items">
+            JSON estruturado (logstash-logback-encoder)<br>
+            correlationId em cada linha<br>
+            traceId + spanId automáticos (Brave)<br>
+            event field por camada<br>
+            CPF mascarado *********XX<br>
+            <a href="http://localhost:3000/explore" target="_blank" style="color:#00c896;font-size:11px;">→ Explorar Logs no Grafana</a>
+          </div>
+        </div>
+        <div class="obs-pillar traces">
+          <div class="obs-icon">🔍</div>
+          <div class="obs-name">Traces</div>
+          <div class="obs-tool">Zipkin + Brave</div>
+          <div class="obs-items">
+            B3 Propagation: traceId + spanId<br>
+            Gateway → Core API → SOAP legado<br>
+            Sampling 100% (POC) / 10% (prod)<br>
+            Loki derivedFields: log → trace<br>
+            Correlation automática log↔trace<br>
+            <a href="http://localhost:9411" target="_blank" style="color:#ff6b35;font-size:11px;">→ Abrir Zipkin UI</a>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; margin-top:16px;">
+        <div class="card" style="flex:1; margin-bottom:0">
+          <div class="card-title">🚦 Alertas Prometheus (alerts.yml)</div>
+          <div class="card-body">BiometriaServiceDown · BiometriaLatenciaAltaP95 · BiometriaAltoIndiceErros · JvmHeapAlto · SoapRequestsZero — todos com links diretos aos painéis Grafana</div>
+        </div>
+        <div class="card" style="flex:1; margin-bottom:0">
+          <div class="card-title">🔗 Todas as rotas via Gateway</div>
+          <div class="card-body">/management/core-api/** · /management/legacy-soap/** · /monitoring/grafana/** · /monitoring/prometheus/** · /monitoring/zipkin/** — operador usa somente :8080</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 13 — LINKS OBSERVABILIDADE -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-13">
+    <div class="slide-header">
+      <h2>Links de Acesso Rápido — Stack Ativa</h2>
+      <span class="slide-tag">Links</span>
+    </div>
+    <div class="slide-body single">
+      <div style="font-size:11px; color:rgba(255,255,255,.4); margin-bottom:12px;">
+        Certifique-se de ter iniciado a stack com:
+        <code style="background:rgba(255,255,255,.06);padding:2px 8px;border-radius:4px;color:#00c896">docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d</code>
+      </div>
+      <div class="link-grid">
+        <a href="http://localhost:8080/swagger-ui/index.html" target="_blank" class="link-btn green">
+          <span class="link-icon">📖</span>
+          <div class="link-text">
+            <span class="link-name">Swagger UI — API Docs</span>
+            <span class="link-url">localhost:8080/swagger-ui/index.html</span>
+          </div>
+        </a>
+        <a href="http://localhost:3000/d/vivo-biometria-poc" target="_blank" class="link-btn">
+          <span class="link-icon">📊</span>
+          <div class="link-text">
+            <span class="link-name">Dashboard Principal</span>
+            <span class="link-url">localhost:3000/d/vivo-biometria-poc</span>
+          </div>
+        </a>
+        <a href="http://localhost:9411" target="_blank" class="link-btn orange">
+          <span class="link-icon">🔍</span>
+          <div class="link-text">
+            <span class="link-name">Zipkin — Traces</span>
+            <span class="link-url">localhost:9411</span>
+          </div>
+        </a>
+        <a href="http://localhost:9090" target="_blank" class="link-btn blue">
+          <span class="link-icon">🔥</span>
+          <div class="link-text">
+            <span class="link-name">Prometheus UI</span>
+            <span class="link-url">localhost:9090</span>
+          </div>
+        </a>
+        <a href="http://localhost:9090/targets" target="_blank" class="link-btn blue">
+          <span class="link-icon">🎯</span>
+          <div class="link-text">
+            <span class="link-name">Prometheus Targets</span>
+            <span class="link-url">localhost:9090/targets</span>
+          </div>
+        </a>
+        <a href="http://localhost:3000/explore" target="_blank" class="link-btn green">
+          <span class="link-icon">📋</span>
+          <div class="link-text">
+            <span class="link-name">Loki — Explorar Logs</span>
+            <span class="link-url">localhost:3000/explore</span>
+          </div>
+        </a>
+        <a href="http://localhost:8081/admin/master/console/" target="_blank" class="link-btn">
+          <span class="link-icon">🔑</span>
+          <div class="link-text">
+            <span class="link-name">Keycloak Admin</span>
+            <span class="link-url">localhost:8081/admin</span>
+          </div>
+        </a>
+        <a href="http://localhost:8080/management/core-api/health" target="_blank" class="link-btn green">
+          <span class="link-icon">❤️</span>
+          <div class="link-text">
+            <span class="link-name">Health — Core API</span>
+            <span class="link-url">localhost:8080/management/core-api/health</span>
+          </div>
+        </a>
+        <a href="http://localhost:9090/alerts" target="_blank" class="link-btn blue">
+          <span class="link-icon">🚨</span>
+          <div class="link-text">
+            <span class="link-name">Alertas Prometheus</span>
+            <span class="link-url">localhost:9090/alerts</span>
+          </div>
+        </a>
+        <a href="http://localhost:3000/alerting/list" target="_blank" class="link-btn">
+          <span class="link-icon">🔔</span>
+          <div class="link-text">
+            <span class="link-name">Alertas Grafana</span>
+            <span class="link-url">localhost:3000/alerting/list</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 14 — MIGRAÇÃO STRANGLER FIG -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-14">
+    <div class="slide-header">
+      <h2>Estratégia de Migração — Strangler Fig Pattern</h2>
+      <span class="slide-tag">Migration</span>
+    </div>
+    <div class="slide-body single">
+      <div class="phases">
+        <div class="phase phase-1">
+          <div class="phase-dot">1</div>
+          <div>
+            <div class="phase-title">Fase 1 — Estabilização e Instrumentação</div>
+            <div class="phase-period">0–3 meses</div>
+            <div class="phase-items">Substituir H2 por Oracle real (HikariCP) · Circuit Breaker Resilience4j com fallback 503+Retry-After · Prometheus + Grafana em produção · Audit log LGPD imutável · TLS em todas as comunicações</div>
+          </div>
+        </div>
+        <div class="phase phase-2">
+          <div class="phase-dot">2</div>
+          <div>
+            <div class="phase-title">Fase 2 — Strangler Fig: Banco Próprio + CDC</div>
+            <div class="phase-period">3–12 meses</div>
+            <div class="phase-items">Schema próprio PostgreSQL/Oracle para Core API · Debezium CDC captura mudanças do Oracle legado → Kafka · Consumer Kafka sincroniza dados locais (lag &lt; 1s) · Feature flag: % leituras → banco local vs SOAP · Evento biometria.consultada para auditoria</div>
+          </div>
+        </div>
+        <div class="phase phase-3">
+          <div class="phase-dot">3</div>
+          <div>
+            <div class="phase-title">Fase 3 — Microsserviço Autônomo</div>
+            <div class="phase-period">12–24 meses</div>
+            <div class="phase-items">Desligar biometria-legacy-soap após 30 dias sem chamadas SOAP · Migrar para OpenTelemetry (OTLP → Tempo) · CQRS se leitura &gt; 10:1 escrita · DPIA revisada e aprovada pelo DPO · Go-live com SLA 99,9%</div>
+          </div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:12px">
+        <span class="callout-icon">💡</span>
+        <span class="callout-text"><strong>Por que Strangler Fig e não reescrita total?</strong> Zero downtime, risco controlado fase a fase, o legado permanece operacional durante toda a transição. Feature flags permitem rollback imediato em qualquer fase sem deploy.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 15 — TESTES E QUALIDADE -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-15">
+    <div class="slide-header">
+      <h2>Testes e Qualidade de Código</h2>
+      <span class="slide-tag">Quality</span>
+    </div>
+    <div class="slide-body cols-2">
+      <div>
+        <div class="card">
+          <div class="card-title">🧪 Cobertura JaCoCo</div>
+          <div class="card-body">
+            <div class="progress-item">
+              <div class="progress-label"><span>biometria-core-api</span><span style="color:#00c896">≥ 80%</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label"><span>biometria-legacy-soap</span><span style="color:#00c896">≥ 70%</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div>
+            </div>
+            <div class="progress-item">
+              <div class="progress-label"><span>biometria-gateway</span><span style="color:#00c896">≥ 70%</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card highlight">
+          <div class="card-title">🎭 WireMock — Testes E2E</div>
+          <div class="card-body">
+            Gateway tests: mockJwt() sem Keycloak real<br>
+            Core API: WireMock stub do SOAP legado<br>
+            Cenários: happy path · CPF inválido · SOAP timeout · 401/403 · correlationId propagado · X-GW-Secret ausente
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card green">
+          <div class="card-title">🎻 Bruno — API Collection</div>
+          <div class="card-body">
+            Coleções .bru por módulo (gateway, core-api, legacy-soap)<br>
+            Variáveis de ambiente: local, docker<br>
+            Scripts: obter token, consultar biometria, health checks, métricas Prometheus, explorar Zipkin<br>
+            Smoke test completo: scripts/test-api.sh
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📦 Build e Commits</div>
+          <div class="card-body">
+            Conventional Commits: feat(core-api), fix(gateway), docs, docker<br>
+            Multi-módulo Maven com BOM centralizado<br>
+            Docker multi-stage: eclipse-temurin:17-jdk-alpine → jre-alpine<br>
+            Non-root user · JVM tuning flags<br>
+            Spring Cloud 2023.0 BOM
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 16 — SUBIR COM DOCKER -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-content" id="slide-16">
+    <div class="slide-header">
+      <h2>Como Executar a Aplicação</h2>
+      <span class="slide-tag">Getting Started</span>
+    </div>
+    <div class="slide-body cols-2">
+      <div>
+        <div class="card highlight">
+          <div class="card-title">🐳 Stack Completa com Docker Compose</div>
+          <div class="card-body">Sobe apps + Keycloak + observabilidade em um único comando</div>
+        </div>
+        <div class="cmd-box"><span class="cmd-comment"># 1. Clonar e entrar na pasta</span>
+git clone &lt;repo&gt; && cd poc-vivo-integracao-arquitetural
+
+<span class="cmd-comment"># 2. Subir stack completa</span>
+docker compose <span class="cmd-flag">-f</span> docker-compose.yml \
+  <span class="cmd-flag">-f</span> docker-compose.observability.yml \
+  up -d
+
+<span class="cmd-comment"># 3. Obter token JWT</span>
+TOKEN=$(curl -s -X POST \
+  http://localhost:8081/realms/vivo-poc/protocol/openid-connect/token \
+  -d "grant_type=client_credentials&amp;client_id=parceiro-externo&amp;client_secret=parceiro-secret" \
+  | jq -r .access_token)
+
+<span class="cmd-comment"># 4. Consultar biometria</span>
+curl -s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/v1/biometria/12345678909 | jq
+
+<span class="cmd-comment"># 5. Smoke test completo</span>
+bash scripts/test-api.sh</div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title">🔌 Portas dos Serviços</div>
+          <div class="card-body">
+            <table class="data-table" style="margin-top:8px">
+              <thead><tr><th>Serviço</th><th>Porta</th><th>Acesso</th></tr></thead>
+              <tbody>
+                <tr><td>Gateway</td><td>:8080</td><td><span class="tag">Público</span></td></tr>
+                <tr><td>Keycloak</td><td>:8081</td><td><span class="tag">Público</span></td></tr>
+                <tr><td>Core API</td><td>:8082</td><td><span class="tag">Interno</span></td></tr>
+                <tr><td>Legacy SOAP</td><td>:8083</td><td><span class="tag">Interno</span></td></tr>
+                <tr><td>Grafana</td><td>:3000</td><td><span class="tag">Ops</span></td></tr>
+                <tr><td>Prometheus</td><td>:9090</td><td><span class="tag">Ops</span></td></tr>
+                <tr><td>Zipkin</td><td>:9411</td><td><span class="tag">Ops</span></td></tr>
+                <tr><td>Loki</td><td>:3100</td><td><span class="tag">Interno</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card green">
+          <div class="card-title">📘 Módulo Isolado (dev)</div>
+          <div class="card-body">
+            <code style="font-family:monospace;font-size:11px;color:#00c896">
+              cd biometria-legacy-soap && mvn spring-boot:run<br>
+              cd biometria-core-api && mvn spring-boot:run<br>
+              cd biometria-gateway && mvn spring-boot:run
+            </code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SLIDE 17 — ENCERRAMENTO -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="slide slide-cover" id="slide-17" style="background:linear-gradient(135deg,#0d001a 0%,#1a0033 35%,#2d0060 65%,#660099 100%);">
+    <div class="cover-eyebrow">Resultados e Entregáveis</div>
+    <div class="cover-title">
+      POC <span>Implementada</span><br>e Testada
+    </div>
+    <div class="cover-divider"></div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:580px;position:relative;margin-bottom:32px;">
+      <div class="kv-item"><div class="kv-label">Módulos Java</div><div class="kv-value">3 microserviços</div></div>
+      <div class="kv-item"><div class="kv-label">Camadas de segurança</div><div class="kv-value">5 camadas</div></div>
+      <div class="kv-item"><div class="kv-label">Observabilidade</div><div class="kv-value">Métricas + Logs + Traces</div></div>
+      <div class="kv-item"><div class="kv-label">Dashboards</div><div class="kv-value">Grafana provisionado</div></div>
+      <div class="kv-item"><div class="kv-label">Estratégia de migração</div><div class="kv-value">Strangler Fig 3 fases</div></div>
+      <div class="kv-item"><div class="kv-label">Conformidade</div><div class="kv-value">LGPD Art. 11</div></div>
+    </div>
+    <div style="display:flex;gap:12px;position:relative;flex-wrap:wrap;">
+      <a href="http://localhost:3000/d/vivo-biometria-poc" target="_blank" style="background:var(--vivo-purple);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">📊 Grafana Dashboard</a>
+      <a href="http://localhost:9411" target="_blank" style="background:#d35400;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">🔍 Zipkin Traces</a>
+      <a href="http://localhost:9090" target="_blank" style="background:#1e90ff;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">🔥 Prometheus</a>
+    </div>
+    <div class="cover-logo-area" style="top:auto;bottom:40px;transform:none;">
+      <div class="vivo-badge">vivo</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-top:6px;">Arquitetura de Integração<br>Junho 2026</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- THUMBNAILS -->
+<div class="slide-thumbnails" id="thumbnails"></div>
+
+<script>
+  var TOTAL = 17;
+  var current = 1;
+
+  var titles = [
+    'Capa', 'Contexto', 'Arquitetura',
+    'C1 Context', 'C2 Container', 'C3 Components', 'Sequência',
+    'Fluxo', 'Clean Arch', 'Segurança', 'Observabilidade',
+    'Links', 'Migração', 'Testes', 'Docker', 'Encerramento'
+  ];
+
+  function goTo(n) {
+    if (n < 1 || n > TOTAL || n === current) return;
+    var prev = document.getElementById('slide-' + current);
+    if (prev) prev.classList.remove('active');
+    current = n;
+    var next = document.getElementById('slide-' + current);
+    if (next) next.classList.add('active');
+    document.getElementById('slide-counter').textContent = current + ' / ' + TOTAL;
+    document.getElementById('btn-prev').disabled = (current === 1);
+    document.getElementById('btn-next').disabled = (current === TOTAL);
+    var thumbs = document.querySelectorAll('.thumb');
+    for (var k = 0; k < thumbs.length; k++) {
+      thumbs[k].classList.toggle('active', k + 1 === current);
+    }
+    window.scrollTo({ top: 60, behavior: 'smooth' });
+  }
+
+  function navigate(dir) {
+    goTo(current + dir);
+  }
+
+  // Build thumbnails
+  (function() {
+    var container = document.getElementById('thumbnails');
+    for (var j = 1; j <= TOTAL; j++) {
+      (function(idx) {
+        var t = document.createElement('div');
+        t.className = 'thumb' + (idx === 1 ? ' active' : '');
+        t.title = titles[idx - 1];
+        t.textContent = idx;
+        t.addEventListener('click', function() { goTo(idx); });
+        contai
