@@ -1,0 +1,12 @@
+management:
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/vivo-poc}
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://host.docker.internal:8081/realms/vivo-poc/protocol/openid-connect/certs}

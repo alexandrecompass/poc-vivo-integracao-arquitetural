@@ -196,6 +196,7 @@ secrets/
 .env
 .env.*
 !.env.example
+!**/.env.example
 
 # -----------------------------------------------------------------------------
 # Temporários e rascunhos
@@ -206,3 +207,4 @@ secrets/
 *.swo
 *~
 .cache/
+docs/BASE.md

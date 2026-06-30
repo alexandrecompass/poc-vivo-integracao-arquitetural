@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: biometria-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/vivo-poc}
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8081/realms/vivo-poc/protocol/openid-connect/certs}
+  cloud:
+    gateway:
+      # Propaga X-Forwarded-Host, X-Forwarded-Port, X-Forwarded-Proto ao Core API
+      # para que o Springdoc gere a spec com localhost:8080 como server URL (evita CORS no Swagger)
+      x-forwarded:
+        enabled: true
+        for-enabled: true
+        host-enabled: true
+        port-enabled: true
+        proto-enabled: true
+        prefix-enabled: false
+
+gateway:
+  secret: ${GATEWAY_SECRET:gateway-secret-poc}
+
+downstream:
+  core-api:
+    url: ${CORE_API_URL:http://localhost:8082}
+  legacy-soap:
+    url: ${LEGACY_SOAP_URL:http://localhost:8083}
+  prometheus:
+    url: ${PROMETHEUS_URL:http://localhost:9090}
+  grafana:
+    url: ${GRAFANA_URL:http://localhost:3000}
+  zipkin:
+    url: ${ZIPKIN_URL:http://localhost:9411}
+  keycloak:
+    url: ${KEYCLOAK_URL:http://localhost:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.75, 0.95, 0.99
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  config: classpath:logback-spring.xml

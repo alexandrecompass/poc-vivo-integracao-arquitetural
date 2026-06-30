@@ -22,7 +22,7 @@
   <modules>
     <module>biometria-legacy-soap</module>
     <module>biometria-core-api</module>
-<!--    <module>biometria-gateway</module>-->
+    <module>biometria-gateway</module>
   </modules>
 
   <properties>
