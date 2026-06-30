@@ -1,0 +1,66 @@
+%% Sequence Diagram - Fluxo Feliz
+%% Projeto: POC Vivo – Integração Arquitetural
+%% Artefato: consultar-biometria-fluxo-feliz.mmd
+%% Versão: 1.0
+
+sequenceDiagram
+    autonumber
+
+    actor Partner as Parceiro Externo
+    participant Keycloak
+    participant Gateway as API Gateway
+    participant Corr as CorrelationIdFilter
+    participant Controller as BiometriaController
+    participant UseCase as ConsultarBiometriaUseCase
+    participant Port as BiometriaLegadoPort
+    participant Adapter as SoapBiometriaLegadoAdapter
+    participant SoapClient as SoapBiometriaClient
+    participant Legacy as Legacy SOAP Service
+    participant H2 as H2 Database
+    participant SoapMapper as SoapBiometriaMapper
+    participant ResponseMapper as BiometriaResponseMapper
+    participant Metrics as BiometriaMetrics
+
+    Note over Partner,Keycloak: Autenticação
+
+    Partner->>Keycloak: Solicita token OAuth2 (Client Credentials)
+    Keycloak-->>Partner: JWT (scope: biometria:read)
+
+    Note over Partner,Gateway: Chamada REST
+
+    Partner->>Gateway: GET /api/v1/biometria/{cpf}\nAuthorization: Bearer JWT
+    Gateway->>Gateway: Valida JWT\nIssuer\nExpiração\nScope
+    Gateway->>Gateway: Gera ou propaga X-Correlation-Id
+
+    Gateway->>Corr: Encaminha requisição
+    Corr->>Controller: Contexto com Correlation ID
+
+    Controller->>Controller: Valida e normaliza CPF
+    Controller->>UseCase: consultarBiometria(cpf)
+
+    UseCase->>Port: consultarPorCpf(cpf)
+    Port->>Adapter: Implementação da porta
+
+    Adapter->>Adapter: Monta request SOAP
+    Adapter->>SoapClient: consultarBiometriaPorCpf(cpf)
+
+    SoapClient->>Legacy: SOAP Request
+    Legacy->>H2: Consulta biometria
+    H2-->>Legacy: Dados fictícios
+    Legacy-->>SoapClient: SOAP Response
+
+    SoapClient-->>Adapter: Resposta SOAP
+    Adapter->>SoapMapper: Converter SOAP → Domínio
+    SoapMapper-->>Adapter: Modelo de domínio
+
+    Adapter-->>UseCase: Biometria
+    UseCase->>Metrics: Registra métricas
+    UseCase-->>Controller: Resultado
+
+    Controller->>ResponseMapper: Domínio → DTO REST
+    ResponseMapper-->>Controller: BiometriaResponse
+
+    Controller-->>Gateway: HTTP 200
+    Gateway-->>Partner: HTTP 200 + JSON
+
+    Note over Gateway,Partner: Logs estruturados e Correlation ID disponíveis ponta a ponta

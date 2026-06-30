@@ -1,0 +1,66 @@
+%% C4 Model - C3 Component Diagram
+%% Projeto: POC Vivo – Integração Arquitetural
+%% Artefato: C3-Component-Core-API.mmd
+%% Versão: 1.0
+
+C4Component
+title C3 - Component Diagram - Biometria Core API
+
+Person(parceiro, "Parceiro Externo", "Consumidor autorizado")
+
+Container(gateway, "API Gateway", "Spring Cloud Gateway", "Valida JWT, aplica políticas e encaminha requisições")
+Container_Ext(legacySoap, "Legacy SOAP Service", "Spring Boot SOAP", "Serviço legado fictício para consulta de biometria")
+
+Container_Boundary(core, "Biometria Core API") {
+
+    Component(correlationFilter, "CorrelationIdFilter", "Servlet Filter", "Garante X-Correlation-Id em todas as requisições")
+    Component(loggingFilter, "RequestLoggingFilter", "Servlet Filter", "Registra logs estruturados de entrada e saída")
+
+    Component(controller, "BiometriaController", "REST Controller", "Expõe GET /api/v1/biometria/{cpf}")
+    Component(validator, "BiometriaRequestValidator / Cpf", "Validator / Value Object", "Valida e normaliza CPF")
+    Component(responseMapper, "BiometriaResponseMapper", "Mapper", "Converte modelo interno para DTO REST v1")
+
+    Component(useCase, "ConsultarBiometriaUseCase", "Application Use Case", "Orquestra a consulta de biometria")
+    Component(domain, "Biometria Domain Model", "Domain Model", "Representa CPF, biometria, status e origem")
+
+    Component(port, "BiometriaLegadoPort", "Output Port", "Define contrato interno para consulta ao legado")
+    Component(adapter, "SoapBiometriaLegadoAdapter", "SOAP Adapter", "Implementa a porta usando o serviço SOAP legado")
+    Component(soapClient, "SoapBiometriaClient", "SOAP Client", "Executa a chamada técnica ao serviço SOAP")
+    Component(soapMapper, "SoapBiometriaMapper", "Mapper", "Converte resposta SOAP para modelo interno")
+    Component(faultTranslator, "SoapFaultTranslator", "Error Translator", "Traduz SOAP Faults para exceções internas")
+
+    Component(exceptionHandler, "GlobalExceptionHandler", "Exception Handler", "Converte exceções internas em respostas REST padronizadas")
+    Component(metrics, "BiometriaMetrics", "Micrometer / Actuator", "Registra métricas de consultas, erros e latência")
+}
+
+Rel(parceiro, gateway, "Chama API", "HTTPS REST")
+Rel(gateway, correlationFilter, "Encaminha requisição autorizada", "HTTP REST")
+Rel(correlationFilter, loggingFilter, "Propaga correlation ID")
+Rel(loggingFilter, controller, "Encaminha requisição")
+
+Rel(controller, validator, "Valida CPF")
+Rel(controller, useCase, "Executa caso de uso")
+Rel(useCase, port, "Consulta biometria")
+Rel(adapter, port, "Implementa")
+Rel(adapter, soapClient, "Chama serviço SOAP")
+Rel(adapter, soapMapper, "Mapeia resposta")
+Rel(adapter, faultTranslator, "Traduz falhas")
+Rel(soapClient, legacySoap, "Consulta biometria", "SOAP / HTTP")
+
+Rel(useCase, domain, "Usa modelo interno")
+Rel(controller, responseMapper, "Monta resposta REST")
+Rel(exceptionHandler, controller, "Padroniza erros")
+Rel(metrics, useCase, "Registra métricas do caso de uso")
+Rel(metrics, adapter, "Registra latência SOAP")
+
+UpdateElementStyle(controller, $bgColor="#1168bd", $fontColor="#ffffff")
+UpdateElementStyle(useCase, $bgColor="#0b6e4f", $fontColor="#ffffff")
+UpdateElementStyle(port, $bgColor="#6c5ce7", $fontColor="#ffffff")
+UpdateElementStyle(adapter, $bgColor="#e17055", $fontColor="#ffffff")
+UpdateElementStyle(soapClient, $bgColor="#d35400", $fontColor="#ffffff")
+UpdateElementStyle(legacySoap, $bgColor="#999999", $fontColor="#ffffff")
+UpdateElementStyle(domain, $bgColor="#00b894", $fontColor="#ffffff")
+UpdateElementStyle(exceptionHandler, $bgColor="#c0392b", $fontColor="#ffffff")
+UpdateElementStyle(correlationFilter, $bgColor="#0984e3", $fontColor="#ffffff")
+UpdateElementStyle(loggingFilter, $bgColor="#0984e3", $fontColor="#ffffff")
+UpdateElementStyle(metrics, $bgColor="#2d3436", $fontColor="#ffffff")

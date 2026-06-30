@@ -1,0 +1,59 @@
+%% Sequence Diagram - Legado SOAP Indisponível
+%% Projeto: POC Vivo – Integração Arquitetural
+%% Artefato: legado-soap-indisponivel.mmd
+%% Versão: 1.0
+
+sequenceDiagram
+    autonumber
+
+    actor Partner as Parceiro Externo
+    participant Gateway as API Gateway
+    participant Corr as CorrelationIdFilter
+    participant Controller as BiometriaController
+    participant UseCase as ConsultarBiometriaUseCase
+    participant Port as BiometriaLegadoPort
+    participant Adapter as SoapBiometriaLegadoAdapter
+    participant SoapClient as SoapBiometriaClient
+    participant Legacy as Legacy SOAP Service
+    participant Translator as SoapFaultTranslator
+    participant Handler as GlobalExceptionHandler
+    participant Metrics as BiometriaMetrics
+
+    Note over Partner,Gateway: Requisição autenticada
+
+    Partner->>Gateway: GET /api/v1/biometria/{cpf}
+    Gateway->>Gateway: Valida JWT e escopo
+    Gateway->>Corr: Propaga X-Correlation-Id
+    Corr->>Controller: Encaminha requisição
+
+    Controller->>Controller: Valida CPF
+    Controller->>UseCase: consultarBiometria(cpf)
+
+    UseCase->>Port: consultarPorCpf(cpf)
+    Port->>Adapter: Implementação da porta
+
+    Adapter->>SoapClient: consultarBiometriaPorCpf(cpf)
+
+    Note over SoapClient,Legacy: Falha de infraestrutura
+
+    SoapClient->>Legacy: SOAP Request
+
+    alt Timeout
+        Legacy--xSoapClient: Timeout
+    else SOAP Fault
+        Legacy-->>SoapClient: SOAP Fault
+    else Serviço indisponível
+        Legacy--xSoapClient: Connection refused
+    end
+
+    SoapClient-->>Adapter: Erro técnico
+    Adapter->>Translator: Traduz falha SOAP
+    Translator-->>UseCase: LegadoIndisponivelException
+
+    UseCase->>Metrics: Incrementa contador de erro
+    UseCase-->>Handler: Propaga exceção
+
+    Handler-->>Gateway: HTTP 502/504 + ErrorResponse
+    Gateway-->>Partner: Resposta REST padronizada
+
+    Note over Gateway,Partner: Mesmo Correlation ID presente em todos os logs

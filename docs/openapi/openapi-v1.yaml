@@ -1,0 +1,350 @@
+openapi: 3.0.3
+info:
+  title: POC Vivo - API de Biometria Facial
+  description: |
+    API REST versionada para consulta de biometria facial fictícia por CPF.
+
+    Esta API faz parte da POC Vivo - Integração Arquitetural e demonstra a exposição moderna
+    de dados originalmente disponíveis em um sistema legado SOAP.
+
+    A solução aplica:
+      - API Gateway como ponto único de entrada;
+      - OAuth2/JWT com Keycloak;
+      - escopo biometria:read;
+      - versionamento por URI;
+      - logs estruturados;
+      - correlation ID;
+      - tratamento padronizado de erros;
+      - isolamento do legado SOAP por Adapter e Anti-Corruption Layer.
+
+    Observação:
+    Os dados de biometria utilizados nesta POC são fictícios. Em ambiente produtivo,
+    biometria facial é dado pessoal sensível e deve seguir controles rigorosos de segurança,
+    auditoria, retenção, minimização e conformidade regulatória.
+  version: 1.0.0
+  contact:
+    name: POC Vivo - Integração Arquitetural
+
+servers:
+  - url: http://localhost:8080
+    description: API Gateway local
+  - url: http://localhost:8082
+    description: Biometria Core API local, uso interno/desenvolvimento
+
+tags:
+  - name: Biometria
+    description: Operações relacionadas à consulta de biometria facial fictícia.
+
+paths:
+  /api/v1/biometria/{cpf}:
+    get:
+      tags:
+        - Biometria
+      summary: Consultar biometria facial por CPF
+      description: |
+        Consulta a disponibilidade de biometria facial fictícia para um CPF informado.
+
+        A chamada pública deve ser realizada preferencialmente através do API Gateway.
+        O gateway valida o token JWT emitido pelo Keycloak e verifica o escopo `biometria:read`.
+
+        A Biometria Core API consulta o serviço legado SOAP por meio de Adapter/Anti-Corruption Layer,
+        evitando que detalhes de SOAP, XML, WSDL ou Oracle vazem para o contrato REST.
+
+        Regras importantes:
+          - o CPF completo não deve ser registrado em logs;
+          - o token JWT completo não deve ser registrado em logs;
+          - a imagem/Base64 não deve ser registrada em logs;
+          - o header `X-Correlation-Id` deve ser propagado ponta a ponta;
+          - falhas do legado devem ser traduzidas para respostas REST padronizadas.
+      operationId: consultarBiometriaPorCpf
+      security:
+        - oauth2ClientCredentials:
+            - biometria:read
+      parameters:
+        - name: cpf
+          in: path
+          required: true
+          description: CPF do cliente. Informar apenas números, com 11 dígitos.
+          schema:
+            type: string
+            pattern: '^[0-9]{11}$'
+            example: "12345678909"
+        - name: X-Correlation-Id
+          in: header
+          required: false
+          description: |
+            Identificador de correlação da requisição.
+
+            Caso não seja informado pelo consumidor, o API Gateway deverá gerar um novo valor.
+            O mesmo identificador deve ser propagado para os serviços internos e retornado na resposta.
+          schema:
+            type: string
+            format: uuid
+            example: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+      responses:
+        "200":
+          description: Biometria encontrada com sucesso.
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/XCorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BiometriaResponse"
+              examples:
+                sucesso:
+                  summary: Biometria disponível
+                  value:
+                    cpf: "***.***.***-09"
+                    biometriaDisponivel: true
+                    imagemBase64: "valor-ficticio-base64"
+                    origem: "LEGADO_SOAP"
+                    dataConsulta: "2026-06-30T12:00:00Z"
+                    correlationId: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+        "400":
+          description: CPF inválido ou parâmetro malformado.
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/XCorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                cpfInvalido:
+                  summary: CPF inválido
+                  value:
+                    timestamp: "2026-06-30T12:00:00Z"
+                    status: 400
+                    error: "CPF_INVALIDO"
+                    message: "CPF inválido. Informe um CPF com 11 dígitos numéricos."
+                    path: "/api/v1/biometria/123"
+                    correlationId: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+        "401":
+          description: Requisição não autenticada. Token ausente, inválido ou expirado.
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/XCorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                naoAutenticado:
+                  summary: Token ausente ou inválido
+                  value:
+                    timestamp: "2026-06-30T12:00:00Z"
+                    status: 401
+                    error: "NAO_AUTENTICADO"
+                    message: "Token de acesso ausente, inválido ou expirado."
+                    path: "/api/v1/biometria/12345678909"
+                    correlationId: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+        "403":
+          description: Requisição autenticada, porém sem permissão para consultar biometria.
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/XCorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                semPermissao:
+                  summary: Escopo insuficiente
+                  value:
+                    timestamp: "2026-06-30T12:00:00Z"
+                    status: 403
+                    error: "ACESSO_NEGADO"
+                    message: "O token informado não possui o escopo necessário: biometria:read."
+                    path: "/api/v1/biometria/12345678909"
+                    correlationId: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+        "404":
+          description: Biometria não encontrada para o CPF informado.
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/XCorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                naoEncontrada:
+                  summary: Biometria não encontrada
+                  value:
+                    timestamp: "2026-06-30T12:00:00Z"
+                    status: 404
+                    error: "BIOMETRIA_NAO_ENCONTRADA"
+                    message: "Biometria não encontrada para o CPF informado."
+                    path: "/api/v1/biometria/12345678909"
+                    correlationId: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+        "502":
+          description: Falha técnica ao consultar o serviço legado SOAP.
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/XCorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                legadoIndisponivel:
+                  summary: Legado indisponível
+                  value:
+                    timestamp: "2026-06-30T12:00:00Z"
+                    status: 502
+                    error: "LEGADO_INDISPONIVEL"
+                    message: "Não foi possível consultar a biometria neste momento."
+                    path: "/api/v1/biometria/12345678909"
+                    correlationId: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+        "504":
+          description: Timeout ao consultar o serviço legado SOAP.
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/XCorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                timeout:
+                  summary: Timeout no legado
+                  value:
+                    timestamp: "2026-06-30T12:00:00Z"
+                    status: 504
+                    error: "TIMEOUT_LEGADO"
+                    message: "O serviço legado demorou mais do que o esperado para responder."
+                    path: "/api/v1/biometria/12345678909"
+                    correlationId: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+        "500":
+          description: Erro interno inesperado.
+          headers:
+            X-Correlation-Id:
+              $ref: "#/components/headers/XCorrelationId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                erroInterno:
+                  summary: Erro interno
+                  value:
+                    timestamp: "2026-06-30T12:00:00Z"
+                    status: 500
+                    error: "ERRO_INTERNO"
+                    message: "Erro interno inesperado."
+                    path: "/api/v1/biometria/12345678909"
+                    correlationId: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+
+components:
+  securitySchemes:
+    oauth2ClientCredentials:
+      type: oauth2
+      description: |
+        Segurança baseada em OAuth2 Client Credentials com JWT emitido pelo Keycloak.
+
+        O token deve conter o escopo `biometria:read` para permitir a consulta da API.
+      flows:
+        clientCredentials:
+          tokenUrl: http://localhost:8081/realms/vivo-poc/protocol/openid-connect/token
+          scopes:
+            biometria:read: Permite consultar biometria facial fictícia por CPF.
+
+  headers:
+    XCorrelationId:
+      description: Identificador de correlação propagado ponta a ponta.
+      schema:
+        type: string
+        format: uuid
+        example: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+
+  schemas:
+    BiometriaResponse:
+      type: object
+      description: Resposta REST v1 para consulta de biometria facial fictícia.
+      required:
+        - cpf
+        - biometriaDisponivel
+        - origem
+        - dataConsulta
+        - correlationId
+      properties:
+        cpf:
+          type: string
+          description: CPF mascarado para evitar exposição de dado pessoal completo.
+          example: "***.***.***-09"
+        biometriaDisponivel:
+          type: boolean
+          description: Indica se há biometria disponível para o CPF consultado.
+          example: true
+        imagemBase64:
+          type: string
+          nullable: true
+          description: |
+            Imagem fictícia em Base64 para fins de POC.
+
+            Em ambiente produtivo, avaliar alternativa mais segura, como URL temporária,
+            token de acesso controlado ou mecanismo específico de download auditável.
+          example: "valor-ficticio-base64"
+        origem:
+          type: string
+          description: Origem lógica da informação.
+          enum:
+            - LEGADO_SOAP
+          example: "LEGADO_SOAP"
+        dataConsulta:
+          type: string
+          format: date-time
+          description: Data/hora da consulta.
+          example: "2026-06-30T12:00:00Z"
+        correlationId:
+          type: string
+          format: uuid
+          description: Identificador de correlação da requisição.
+          example: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"
+
+    ErrorResponse:
+      type: object
+      description: Resposta padronizada de erro REST v1.
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+        - correlationId
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Momento em que o erro ocorreu.
+          example: "2026-06-30T12:00:00Z"
+        status:
+          type: integer
+          format: int32
+          description: Código HTTP da resposta.
+          example: 502
+        error:
+          type: string
+          description: Código funcional/técnico padronizado do erro.
+          enum:
+            - CPF_INVALIDO
+            - NAO_AUTENTICADO
+            - ACESSO_NEGADO
+            - BIOMETRIA_NAO_ENCONTRADA
+            - LEGADO_INDISPONIVEL
+            - TIMEOUT_LEGADO
+            - ERRO_INTERNO
+          example: "LEGADO_INDISPONIVEL"
+        message:
+          type: string
+          description: Mensagem segura e compreensível para o consumidor.
+          example: "Não foi possível consultar a biometria neste momento."
+        path:
+          type: string
+          description: Caminho da requisição.
+          example: "/api/v1/biometria/12345678909"
+        correlationId:
+          type: string
+          format: uuid
+          description: Identificador de correlação da requisição.
+          example: "7f1d5c90-6e09-4d8f-91a9-9b6cf7a01f4a"

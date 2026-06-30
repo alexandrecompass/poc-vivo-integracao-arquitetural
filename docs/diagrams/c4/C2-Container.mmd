@@ -1,0 +1,37 @@
+%% C4 Model - C2 Container Diagram
+C4Container
+title C2 - Container Diagram - POC Vivo Integração Arquitetural
+
+Person(parceiro, "Parceiro Externo", "Consumidor autorizado")
+
+System_Ext(keycloak, "Keycloak", "OAuth2 / OpenID Connect")
+
+System_Boundary(plataforma, "Plataforma de Integração de Biometria") {
+
+    Container(gateway, "API Gateway", "Spring Boot + Spring Cloud Gateway",
+        "Ponto único de entrada. Valida JWT, aplica políticas e roteia chamadas.")
+
+    Container(core, "Biometria Core API", "Spring Boot REST",
+        "Implementa o caso de uso, integra com o legado SOAP e expõe a API REST.")
+
+    Container(soap, "Legacy SOAP Service", "Spring Boot SOAP",
+        "Simula o serviço legado responsável pela consulta de biometria.")
+
+    ContainerDb(h2, "H2 Database", "H2",
+        "Simula o Oracle legado contendo dados fictícios de biometria.")
+}
+
+Rel(parceiro, keycloak, "Obtém token", "HTTPS / OAuth2 Client Credentials")
+Rel(keycloak, parceiro, "Retorna JWT", "JWT")
+
+Rel(parceiro, gateway, "GET /api/v1/biometria/{cpf}", "HTTPS REST")
+Rel(gateway, keycloak, "Valida JWT", "JWKS / OIDC")
+Rel(gateway, core, "Encaminha requisição", "HTTP REST")
+Rel(core, soap, "Consulta biometria", "SOAP")
+Rel(soap, h2, "Consulta dados", "JDBC")
+
+UpdateElementStyle(gateway, $bgColor="#1168bd", $fontColor="#ffffff")
+UpdateElementStyle(core, $bgColor="#0b6e4f", $fontColor="#ffffff")
+UpdateElementStyle(soap, $bgColor="#999999", $fontColor="#ffffff")
+UpdateElementStyle(h2, $bgColor="#f39c12", $fontColor="#ffffff")
+UpdateElementStyle(keycloak, $bgColor="#7d5fff", $fontColor="#ffffff")
