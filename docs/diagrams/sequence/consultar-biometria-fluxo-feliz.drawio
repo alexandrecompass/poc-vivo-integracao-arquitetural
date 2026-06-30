@@ -1,0 +1,158 @@
+<mxfile host="app.diagrams.net" version="21.7.5">
+  <diagram id="seq-fluxo-feliz" name="Sequência — Fluxo Feliz">
+    <mxGraphModel dx="1422" dy="762" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="1">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TITLE -->
+        <mxCell id="title" value="Sequence Diagram — Consulta de Biometria (Fluxo Feliz)&#xa;POC Vivo · Integração Arquitetural" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=16;fontStyle=1;fontColor=#1a1a2e;" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="1200" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- PHASE LABELS -->
+        <mxCell id="ph1" value="Fase 1 — Autenticação OAuth2" style="text;html=1;strokeColor=#5d6d7e;fillColor=#eaf0fb;rounded=1;fontSize=11;fontStyle=1;fontColor=#5d6d7e;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="125" width="260" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ph2" value="Fase 2 — Gateway: JWT + Correlação" style="text;html=1;strokeColor=#1168bd;fillColor=#dae8fc;rounded=1;fontSize=11;fontStyle=1;fontColor=#1168bd;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="280" width="280" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ph3" value="Fase 3 — Core API: Secret + Caso de Uso" style="text;html=1;strokeColor=#0b6e4f;fillColor=#d5f5e3;rounded=1;fontSize=11;fontStyle=1;fontColor=#0b6e4f;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="440" width="310" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ph4" value="Fase 4 — Legacy SOAP + H2" style="text;html=1;strokeColor=#797d7f;fillColor=#f0f0f0;rounded=1;fontSize=11;fontStyle=1;fontColor=#555555;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="600" width="240" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ph5" value="Fase 5 — Resposta e Observabilidade" style="text;html=1;strokeColor=#e6522c;fillColor=#fde8df;rounded=1;fontSize=11;fontStyle=1;fontColor=#e6522c;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="770" width="280" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- ─── LIFELINES ─── -->
+        <!-- Parceiro -->
+        <mxCell id="ll-parceiro-h" value="👤 Parceiro&#xa;Externo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#1168bd;fontColor=#1168bd;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="75" width="120" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="ll-parceiro" value="" style="edgeStyle=none;endArrow=none;strokeColor=#1168bd;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="260" y="120"/><mxPoint x="260" y="960"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- Keycloak -->
+        <mxCell id="ll-kc-h" value="🔐 Keycloak" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5d6d7e;strokeColor=#3d4d5e;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="75" width="120" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="ll-kc" value="" style="edgeStyle=none;endArrow=none;strokeColor=#5d6d7e;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="480" y="120"/><mxPoint x="480" y="960"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- Gateway -->
+        <mxCell id="ll-gw-h" value="🌐 Gateway&#xa;:8080" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168bd;strokeColor=#0b4884;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="75" width="120" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="ll-gw" value="" style="edgeStyle=none;endArrow=none;strokeColor=#1168bd;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="700" y="120"/><mxPoint x="700" y="960"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- Core API -->
+        <mxCell id="ll-core-h" value="⚙️ Core API&#xa;:8082" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0b6e4f;strokeColor=#085c42;fontColor=#ffffff;fontSize:12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="870" y="75" width="120" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="ll-core" value="" style="edgeStyle=none;endArrow=none;strokeColor=#0b6e4f;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="930" y="120"/><mxPoint x="930" y="960"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- Legacy SOAP -->
+        <mxCell id="ll-soap-h" value="🏛️ Legacy SOAP&#xa;:8083" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#797d7f;strokeColor=#566573;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="75" width="130" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="ll-soap" value="" style="edgeStyle=none;endArrow=none;strokeColor=#797d7f;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1165" y="120"/><mxPoint x="1165" y="960"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- H2 -->
+        <mxCell id="ll-h2-h" value="🗄️ H2 DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b7950b;strokeColor=#9a7d0a;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="75" width="100" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="ll-h2" value="" style="edgeStyle=none;endArrow=none;strokeColor=#b7950b;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1400" y="120"/><mxPoint x="1400" y="960"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- ─── MESSAGES ─── -->
+        <!-- Phase 1 -->
+        <mxCell id="m1" value="1. POST /token (client_credentials, scope=biometria:read)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;endFill=1;strokeColor=#5d6d7e;fontColor=#5d6d7e;fontSize=11;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="260" y="162"/><mxPoint x="480" y="162"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m2" value="2. JWT assinado RS256 (scope: biometria:read)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=open;endFill=0;strokeColor=#5d6d7e;fontColor=#5d6d7e;fontSize=11;dashed=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="480" y="195"/><mxPoint x="260" y="195"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- Phase 2 -->
+        <mxCell id="m3" value="3. GET /api/v1/biometria/{cpf} + Bearer JWT + X-Correlation-Id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;endFill=1;strokeColor=#1168bd;fontColor=#1168bd;fontSize=11;fontStyle=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="260" y="320"/><mxPoint x="700" y="320"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m4" value="4. Valida JWT via JWKS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;endFill=1;strokeColor=#5d6d7e;fontColor=#5d6d7e;fontSize=11;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="700" y="350"/><mxPoint x="480" y="350"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m4r" value="Chave pública RS256" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=open;endFill=0;strokeColor=#5d6d7e;fontColor=#5d6d7e;fontSize=11;dashed=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="480" y="370"/><mxPoint x="700" y="370"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m5" value="5. Encaminha + X-Gateway-Secret + X-Correlation-Id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;endFill=1;strokeColor=#0b6e4f;fontColor=#0b6e4f;fontSize=11;fontStyle=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="700" y="405"/><mxPoint x="930" y="405"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- Phase 3 -->
+        <mxCell id="note-secret" value="GatewaySecretFilter valida X-Gateway-Secret" style="text;html=1;strokeColor=#c0392b;fillColor=#fdecea;rounded=1;fontSize=10;fontColor=#c0392b;align=center;" vertex="1" parent="1">
+          <mxGeometry x="845" y="425" width="270" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="m6" value="6. Cpf.of(cpf) — valida dígito verificador" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;endFill=1;strokeColor=#0b6e4f;fontColor=#0b6e4f;fontSize=11;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="930" y="462"/><mxPoint x="930" y="462"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m7" value="7. ConsultarBiometriaUseCase.executar(cpf)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;endFill=1;strokeColor=#0b6e4f;fontColor=#0b6e4f;fontSize=11;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="930" y="490"/><mxPoint x="990" y="490"/><mxPoint x="990" y="490"/><mxPoint x="930" y="490"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="8. metrics.incrementarTotal()" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#2d3436;align=left;" vertex="1" parent="1">
+          <mxGeometry x="940" y="510" width="230" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Phase 4 -->
+        <mxCell id="m9" value="9. SOAP ConsultarBiometriaRequest + X-Core-Secret" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;endFill=1;strokeColor=#797d7f;fontColor=#555555;fontSize=11;fontStyle=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="930" y="640"/><mxPoint x="1165" y="640"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="note-core-secret" value="InternalSecretInterceptor valida X-Core-Secret" style="text;html=1;strokeColor=#e17055;fillColor=#fff3ee;rounded=1;fontSize=10;fontColor=#d35400;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="656" width="275" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="m10" value="10. SELECT * FROM biometria WHERE cpf = ?" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;endFill=1;strokeColor=#b7950b;fontColor=#b7950b;fontSize=11;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1165" y="690"/><mxPoint x="1400" y="690"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m11" value="Registro de biometria" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=open;endFill=0;strokeColor=#b7950b;fontColor=#b7950b;fontSize=11;dashed=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1400" y="715"/><mxPoint x="1165" y="715"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m12" value="SOAP ConsultarBiometriaResponse" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=open;endFill=0;strokeColor=#797d7f;fontColor=#555555;fontSize=11;dashed=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1165" y="740"/><mxPoint x="930" y="740"/></Array></mxGeometry>
+        </mxCell>
+
+        <!-- Phase 5 -->
+        <mxCell id="m13" value="11. SoapBiometriaMapper.toDomain() — ACL" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#d35400;align=left;" vertex="1" parent="1">
+          <mxGeometry x="940" y="760" width="280" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="m14" value="12. metrics.incrementarSucesso() + Timer SOAP" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#2d3436;align=left;" vertex="1" parent="1">
+          <mxGeometry x="940" y="790" width="280" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="m15" value="13. HTTP 200 + BiometriaResponse + X-Correlation-Id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=open;endFill=0;strokeColor=#1168bd;fontColor=#1168bd;fontSize=11;fontStyle=1;dashed=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="930" y="830"/><mxPoint x="700" y="830"/></Array></mxGeometry>
+        </mxCell>
+        <mxCell id="m16" value="14. HTTP 200 + JSON + X-Correlation-Id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=open;endFill=0;strokeColor=#1168bd;fontColor=#1168bd;fontSize=11;fontStyle=1;dashed=1;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="700" y="870"/><mxPoint x="260" y="870"/></Array></mxGeometry>
+        </mxCell>
+
+        <mxCell id="note-corr" value="✅ correlationId idêntico em todos os logs e na resposta ao parceiro" style="text;html=1;strokeColor=#27ae60;fillColor=#d5f5e3;rounded=1;fontSize=11;fontColor=#1e8449;align=center;" vertex="1" parent="1">
+          <mxGeometry x="400" y="905" width="700" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- FOOTER -->
+        <mxCell id="footer" value="Sequence Diagram — Fluxo Feliz · POC Vivo · 2026" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#aaaaaa;align=center;" vertex="1" parent="1">
+          <mxGeometry x="200" y="948" width="1300" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

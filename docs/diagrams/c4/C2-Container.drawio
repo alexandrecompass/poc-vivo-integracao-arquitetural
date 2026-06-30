@@ -1,0 +1,174 @@
+<mxfile host="app.diagrams.net" version="21.7.5">
+  <diagram id="C2-container" name="C2 — Container">
+    <mxGraphModel dx="1422" dy="762" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="1">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TITLE -->
+        <mxCell id="title" value="C2 — Container Diagram&#xa;POC Vivo · Integração Arquitetural de Biometria Facial" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#1a1a2e;" vertex="1" parent="1">
+          <mxGeometry x="377" y="28" width="900" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- EXTERNAL: Parceiro -->
+        <mxCell id="parceiro" value="👤 Parceiro Externo" style="shape=mxgraph.c4.person2;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#1168bd;labelPosition=bottom;verticalLabelPosition=top;verticalAlign=bottom;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="360" width="60" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="parceiro-desc" value="Sistema parceiro que&#xa;consome a API REST" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#555555;align=center;" vertex="1" parent="1">
+          <mxGeometry x="30" y="428" width="120" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- EXTERNAL: Keycloak -->
+        <mxCell id="keycloak" value="🔐 Keycloak 24" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5d6d7e;strokeColor=#3d4d5e;fontColor=#ffffff;fontSize=13;fontStyle=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="580" y="60" width="200" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="keycloak-desc" value="OAuth2/OIDC · Emite JWT&#xa;Realm: vivo-poc" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#555555;align=center;" vertex="1" parent="1">
+          <mxGeometry x="560" y="122" width="240" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- SYSTEM BOUNDARY -->
+        <mxCell id="boundary" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#660099;strokeDasharray=8 4;strokeWidth=2;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="270" y="200" width="1100" height="660" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary-label" value="Plataforma de Integração de Biometria — Vivo / Telefônica Brasil" style="text;html=1;strokeColor=none;fillColor=none;fontSize=12;fontStyle=3;fontColor=#660099;align=left;" vertex="1" parent="1">
+          <mxGeometry x="285" y="208" width="600" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- SECURITY LABELS -->
+        <mxCell id="sec1" value="[JWT + scope biometria:read]" style="text;html=1;strokeColor=none;fillColor=#fff2cc;borderColor=#d6b656;rounded=1;fontSize=10;fontColor=#7d6608;align=center;" vertex="1" parent="1">
+          <mxGeometry x="190" y="372" width="195" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="sec2" value="[X-Gateway-Secret]" style="text;html=1;strokeColor=none;fillColor=#ffe6cc;borderColor=#d6b656;rounded=1;fontSize=10;fontColor=#7d4c00;align=center;" vertex="1" parent="1">
+          <mxGeometry x="590" y="372" width="150" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="sec3" value="[X-Core-Secret]" style="text;html=1;strokeColor=none;fillColor=#f8cecc;borderColor=#b85450;rounded=1;fontSize=10;fontColor=#6a1008;align=center;" vertex="1" parent="1">
+          <mxGeometry x="910" y="372" width="130" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- CONTAINER: Gateway -->
+        <mxCell id="gateway" value="🌐 biometria-gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1168bd;strokeColor=#0b4884;fontColor=#ffffff;fontSize=14;fontStyle=1;arcSize=5;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="320" width="230" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway-tech" value="Spring Cloud Gateway · :8080" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#1168bd;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="310" y="393" width="230" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway-desc" value="Valida JWT · Injeta X-Gateway-Secret&#xa;Gera X-Correlation-Id · Métricas de borda" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#555555;align=center;" vertex="1" parent="1">
+          <mxGeometry x="295" y="415" width="260" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- CONTAINER: Core API -->
+        <mxCell id="coreapi" value="⚙️ biometria-core-api" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0b6e4f;strokeColor=#085c42;fontColor=#ffffff;fontSize=14;fontStyle=1;arcSize=5;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="320" width="230" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="coreapi-tech" value="Spring Boot REST · :8082" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#0b6e4f;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="650" y="393" width="230" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="coreapi-desc" value="Caso de uso · Adapter SOAP · Anti-Corruption Layer&#xa;Valida X-Gateway-Secret · Métricas customizadas" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#555555;align=center;" vertex="1" parent="1">
+          <mxGeometry x="630" y="415" width="270" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- CONTAINER: Legacy SOAP -->
+        <mxCell id="soap" value="🏛️ biometria-legacy-soap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#797d7f;strokeColor=#566573;fontColor=#ffffff;fontSize=14;fontStyle=1;arcSize=5;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="990" y="320" width="240" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="soap-tech" value="Spring-WS (SOAP) · :8083" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#797d7f;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="990" y="393" width="240" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="soap-desc" value="Valida X-Core-Secret · Endpoint SOAP&#xa;ConsultarBiometria · Seed de 10 CPFs" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#555555;align=center;" vertex="1" parent="1">
+          <mxGeometry x="975" y="415" width="270" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- CONTAINER: H2 -->
+        <mxCell id="h2" value="🗄️ H2 Database" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#b7950b;strokeColor=#9a7d0a;fontColor=#ffffff;fontSize=13;fontStyle=1;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="530" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="h2-tech" value="H2 In-Memory · JDBC" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#b7950b;align=center;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="618" width="180" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="h2-desc" value="Simula Oracle · Tabela BIOMETRIA&#xa;10 CPFs válidos pré-cadastrados" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#555555;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="638" width="200" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- OBSERVABILITY ROW -->
+        <mxCell id="obs-boundary" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e6522c;strokeDasharray=4 3;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="700" width="1060" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="obs-label" value="Stack de Observabilidade (docker-compose.observability.yml)" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=3;fontColor=#e6522c;align=left;" vertex="1" parent="1">
+          <mxGeometry x="305" y="706" width="500" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prometheus" value="📊 Prometheus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6522c;strokeColor=#b73e21;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="310" y="730" width="140" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="prometheus-desc" value=":9090" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#e6522c;align=center;" vertex="1" parent="1">
+          <mxGeometry x="310" y="778" width="140" height="15" as="geometry" />
+        </mxCell>
+
+        <mxCell id="grafana" value="📈 Grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f46800;strokeColor=#c05200;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="490" y="730" width="140" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="grafana-desc" value=":3000" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#f46800;align=center;" vertex="1" parent="1">
+          <mxGeometry x="490" y="778" width="140" height="15" as="geometry" />
+        </mxCell>
+
+        <mxCell id="loki" value="📝 Loki" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f46800;strokeColor=#c05200;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="670" y="730" width="140" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="loki-desc" value=":3100" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#f46800;align=center;" vertex="1" parent="1">
+          <mxGeometry x="670" y="778" width="140" height="15" as="geometry" />
+        </mxCell>
+
+        <mxCell id="promtail" value="🔍 Promtail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f46800;strokeColor=#c05200;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="850" y="730" width="140" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="zipkin" value="🔗 Zipkin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fe7139;strokeColor=#c45520;fontColor=#ffffff;fontSize=12;fontStyle=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="730" width="140" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="zipkin-desc" value=":9411" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#fe7139;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="778" width="140" height="15" as="geometry" />
+        </mxCell>
+
+        <!-- EDGES -->
+        <mxCell id="e1" value="HTTPS + Bearer JWT" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1168bd;fontColor=#1168bd;fontSize=11;fontStyle=1;labelBackgroundColor=none;" edge="1" parent="1" source="parceiro" target="gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Valida JWKS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#5d6d7e;fontColor=#5d6d7e;fontSize=11;labelBackgroundColor=none;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="gateway" target="keycloak">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="HTTP + X-Gateway-Secret" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0b6e4f;fontColor=#0b6e4f;fontSize=11;fontStyle=1;labelBackgroundColor=none;" edge="1" parent="1" source="gateway" target="coreapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="SOAP + X-Core-Secret" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#797d7f;fontColor=#797d7f;fontSize=11;fontStyle=1;labelBackgroundColor=none;" edge="1" parent="1" source="coreapi" target="soap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="JDBC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b7950b;fontColor=#b7950b;fontSize=11;labelBackgroundColor=none;" edge="1" parent="1" source="soap" target="h2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="scrape /actuator/prometheus" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e6522c;fontColor=#e6522c;fontSize=10;dashed=1;labelBackgroundColor=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="coreapi" target="prometheus">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Logs JSON → Loki" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#f46800;fontColor=#f46800;fontSize=10;dashed=1;labelBackgroundColor=none;" edge="1" parent="1" source="gateway" target="loki">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="425" y="680" />
+              <mxPoint x="740" y="680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="Spans B3 → Zipkin" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#fe7139;fontColor=#fe7139;fontSize=10;dashed=1;labelBackgroundColor=none;" edge="1" parent="1" source="soap" target="zipkin">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1110" y="690" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- FOOTER -->
+        <mxCell id="footer" value="C4 Model — Nível 2 (Container) · POC Vivo · 2026 · Fluxo: Gateway → Core API → Legacy SOAP → H2" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#aaaaaa;align=center;" vertex="1" parent="1">
+          <mxGeometry x="277" y="860" width="1100" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
