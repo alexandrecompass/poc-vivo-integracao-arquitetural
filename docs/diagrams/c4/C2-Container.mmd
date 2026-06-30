@@ -1,37 +1,36 @@
 %% C4 Model - C2 Container Diagram
+%% POC Vivo - Integracao Arquitetural - Biometria Facial
+%% Versao: 1.1 - Corrigido: definicoes em linha unica, seguranca atualizada
+
 C4Container
-title C2 - Container Diagram - POC Vivo Integração Arquitetural
+    title C2 - Container Diagram - Biometria Facial POC Vivo
 
-Person(parceiro, "Parceiro Externo", "Consumidor autorizado")
+    Person(parceiro, "Parceiro Externo", "Consome a API de biometria autorizado")
 
-System_Ext(keycloak, "Keycloak", "OAuth2 / OpenID Connect")
+    System_Ext(keycloak, "Keycloak", "OAuth2/OIDC - Emite e valida JWT com escopo biometria:read")
 
-System_Boundary(plataforma, "Plataforma de Integração de Biometria") {
+    System_Boundary(plataforma, "Plataforma de Integracao de Biometria") {
+        Container(gateway, "API Gateway", "Spring Cloud Gateway", "Entrada unica. Valida JWT, scope e injeta X-Gateway-Secret.")
+        Container(core, "Biometria Core API", "Spring Boot REST", "Valida X-Gateway-Secret, JWT e CPF. Integra com SOAP.")
+        Container(soap, "Legacy SOAP Service", "Spring Boot WS", "Valida X-Core-Secret. Consulta H2 e retorna biometria.")
+        ContainerDb(h2, "H2 Database", "H2 In-Memory", "Simula Oracle com 10 CPFs validos pre-cadastrados.")
+    }
 
-    Container(gateway, "API Gateway", "Spring Boot + Spring Cloud Gateway",
-        "Ponto único de entrada. Valida JWT, aplica políticas e roteia chamadas.")
+    Rel(parceiro, keycloak, "1. Solicita token", "HTTPS / Client Credentials")
+    Rel(keycloak, parceiro, "2. Retorna JWT", "JWT Bearer")
+    Rel(parceiro, gateway, "3. GET /api/v1/biometria/{cpf}", "HTTPS + Bearer JWT")
+    Rel(gateway, keycloak, "4. Valida JWT via JWKS", "HTTPS / OIDC")
+    Rel(gateway, core, "5. Encaminha + X-Gateway-Secret", "HTTP REST interno")
+    Rel(core, soap, "6. Consulta + X-Core-Secret", "SOAP sobre HTTP interno")
+    Rel(soap, h2, "7. Busca biometria por CPF", "JDBC")
 
-    Container(core, "Biometria Core API", "Spring Boot REST",
-        "Implementa o caso de uso, integra com o legado SOAP e expõe a API REST.")
+    UpdateElementStyle(gateway, $bgColor="#1168bd", $fontColor="#ffffff", $borderColor="#0b4884")
+    UpdateElementStyle(core, $bgColor="#0b6e4f", $fontColor="#ffffff", $borderColor="#085c42")
+    UpdateElementStyle(soap, $bgColor="#797d7f", $fontColor="#ffffff", $borderColor="#566573")
+    UpdateElementStyle(h2, $bgColor="#b7950b", $fontColor="#ffffff", $borderColor="#9a7d0a")
+    UpdateElementStyle(keycloak, $bgColor="#5d6d7e", $fontColor="#ffffff", $borderColor="#424949")
 
-    Container(soap, "Legacy SOAP Service", "Spring Boot SOAP",
-        "Simula o serviço legado responsável pela consulta de biometria.")
-
-    ContainerDb(h2, "H2 Database", "H2",
-        "Simula o Oracle legado contendo dados fictícios de biometria.")
-}
-
-Rel(parceiro, keycloak, "Obtém token", "HTTPS / OAuth2 Client Credentials")
-Rel(keycloak, parceiro, "Retorna JWT", "JWT")
-
-Rel(parceiro, gateway, "GET /api/v1/biometria/{cpf}", "HTTPS REST")
-Rel(gateway, keycloak, "Valida JWT", "JWKS / OIDC")
-Rel(gateway, core, "Encaminha requisição", "HTTP REST")
-Rel(core, soap, "Consulta biometria", "SOAP")
-Rel(soap, h2, "Consulta dados", "JDBC")
-
-UpdateElementStyle(gateway, $bgColor="#1168bd", $fontColor="#ffffff")
-UpdateElementStyle(core, $bgColor="#0b6e4f", $fontColor="#ffffff")
-UpdateElementStyle(soap, $bgColor="#999999", $fontColor="#ffffff")
-UpdateElementStyle(h2, $bgColor="#f39c12", $fontColor="#ffffff")
-UpdateElementStyle(keycloak, $bgColor="#7d5fff", $fontColor="#ffffff")
+    UpdateRelStyle(parceiro, gateway, $textColor="#1168bd", $lineColor="#1168bd")
+    UpdateRelStyle(gateway, core, $textColor="#0b6e4f", $lineColor="#0b6e4f")
+    UpdateRelStyle(core, soap, $textColor="#797d7f", $lineColor="#797d7f")
+    UpdateRelStyle(soap, h2, $textColor="#b7950b", $lineColor="#b7950b")

@@ -123,7 +123,10 @@ poc-vivo-integracao-arquitetural/
 - Gerar `X-Correlation-Id` se ausente e propagar downstream
 - Adicionar log de borda (entrada + resposta + duração)
 - Retornar `X-Correlation-Id` na resposta ao parceiro
-- Expor `/actuator/health`
+- Expor `/actuator/health` e `/actuator/prometheus` (próprios)
+- Rotear `/management/core-api/**` → `biometria-core-api:8082/actuator/**` (proxy sem JWT)
+- Rotear `/management/legacy-soap/**` → `biometria-legacy-soap:8083/actuator/**` (proxy sem JWT)
+- Rotear `/monitoring/prometheus/**`, `/monitoring/grafana/**`, `/monitoring/zipkin/**` para os containers de monitoramento
 
 **NÃO é responsabilidade deste módulo:**
 - Conter regra de negócio
@@ -141,6 +144,10 @@ poc-vivo-integracao-arquitetural/
 | biometria-legacy-soap | 8083 | `http://localhost:8083` |
 | Keycloak | 8081 | `http://localhost:8081` |
 | H2 Console (legacy-soap) | 8083 | `http://localhost:8083/h2-console` |
+| Prometheus | 9090 | `http://localhost:9090` (via Gateway: `/monitoring/prometheus`) |
+| Grafana | 3000 | `http://localhost:3000` (via Gateway: `/monitoring/grafana`) |
+| Zipkin | 9411 | `http://localhost:9411` (via Gateway: `/monitoring/zipkin`) |
+| Loki | 3100 | (interno — sem acesso direto externo) |
 
 ---
 
@@ -1250,3 +1257,369 @@ Se qualquer etapa falhar: corrigir antes de avançar. Nunca commitar com teste f
 - LGPD em produção (ver DAS seção 12)
 - Estratégia de migração (ver DAS seção 16)
 - Diagramas C4 (ver `docs/diagrams/`)
+
+---
+
+## 27. Infraestrutura de Observabilidade — Stack Completa
+
+A instrumentação (Micrometer, logstash-logback-encoder, tracing Brave) está especificada nas
+seções 15–17. Esta seção define a infraestrutura Docker que **coleta, armazena e exibe** esses
+dados, e as **rotas do Gateway** que centralizam o acesso.
+
+---
+
+### 27.1 Visão geral
+
+| Pilar | Ferramenta | Função |
+|---|---|---|
+| Métricas | **Prometheus** | Scrape de `/actuator/prometheus` de todos os módulos |
+| Métricas | **Grafana** | Dashboards sobre Prometheus |
+| Logs | **Loki** | Armazenamento de logs JSON |
+| Logs | **Promtail** | Coleta logs dos containers Docker e envia ao Loki |
+| Tracing | **Zipkin** | Recebe spans B3 enviados pelo `zipkin-reporter-brave` |
+| Tracing | **Grafana** | Explora traces via datasource Zipkin |
+
+Todos os dados convergem no **Grafana** como interface única de observabilidade.
+
+---
+
+### 27.2 Dependências Spring Boot — adicionar em todos os módulos
+
+```xml
+<!-- Tracing B3 (Brave) — já especificado na seção 16 -->
+<dependency>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-tracing-bridge-brave</artifactId>
+</dependency>
+
+<!-- Exportador de spans para Zipkin -->
+<dependency>
+  <groupId>io.zipkin.reporter2</groupId>
+  <artifactId>zipkin-reporter-brave</artifactId>
+</dependency>
+```
+
+```yaml
+# application.yml — todos os módulos
+management:
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 1.0   # 100% na POC
+```
+
+Em desenvolvimento local sem Docker Compose, desabilitar o envio:
+```yaml
+management:
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans   # silenciosamente ignorado se Zipkin não estiver rodando
+```
+
+O `zipkin-reporter-brave` não falha a aplicação se o Zipkin estiver offline — spans são
+descartados silenciosamente.
+
+---
+
+### 27.3 Configuração Prometheus (`docker/prometheus/prometheus.yml`)
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'biometria-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['biometria-gateway:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'gateway'
+
+  - job_name: 'biometria-core-api'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['biometria-core-api:8082']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'core-api'
+
+  - job_name: 'biometria-legacy-soap'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['biometria-legacy-soap:8083']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'legacy-soap'
+```
+
+> **Nota:** Prometheus scrapa diretamente os serviços dentro da rede Docker, sem passar pelo Gateway.
+> As rotas `/management/**` do Gateway são para operadores humanos que precisam consultar o actuator
+> via browser, sem saber as portas internas.
+
+---
+
+### 27.4 Docker Compose — serviços de observabilidade
+
+Adicionar no `docker/docker-compose.yml`:
+
+```yaml
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - biometria-net
+    depends_on:
+      - biometria-gateway
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - biometria-net
+    depends_on:
+      - prometheus
+      - loki
+      - zipkin
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    networks:
+      - biometria-net
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    networks:
+      - biometria-net
+    depends_on:
+      - loki
+
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - biometria-net
+```
+
+---
+
+### 27.5 Configuração Promtail (`docker/promtail/promtail-config.yml`)
+
+```yaml
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=biometria"]
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        target_label: container
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: service
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            traceId: traceId
+            correlationId: correlationId
+            event: event
+      - labels:
+          level:
+          traceId:
+          correlationId:
+          service:
+```
+
+Os logs JSON estruturados (logstash-logback-encoder) já contêm os campos `level`, `traceId`,
+`correlationId` e `event`. O Promtail os promove como labels Loki, permitindo filtros no Grafana.
+
+---
+
+### 27.6 Provisioning Grafana (`docker/grafana/provisioning/`)
+
+#### Datasources (`datasources/datasources.yml`)
+
+```yaml
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+    access: proxy
+
+  - name: Loki
+    type: loki
+    url: http://loki:3100
+    access: proxy
+    jsonData:
+      derivedFields:
+        - name: TraceID
+          matcherRegex: '"traceId":"(\w+)"'
+          url: '$${__value.raw}'
+          datasourceUid: Zipkin
+
+  - name: Zipkin
+    type: zipkin
+    url: http://zipkin:9411
+    access: proxy
+    uid: Zipkin
+```
+
+> O campo `derivedFields` no datasource Loki cria links automáticos de `traceId` nos logs para
+> o trace correspondente no Zipkin — correlação logs ↔ traces em um clique.
+
+---
+
+### 27.7 Rotas de management no Gateway (`GatewayRoutesConfig.java`)
+
+Adicionar as rotas a seguir em `biometria-gateway`, **antes** das rotas `/api/v1/**`:
+
+```java
+// Proxy para actuator dos serviços internos — sem JWT (acesso operacional interno)
+.route("management-core-api", r -> r
+    .path("/management/core-api/**")
+    .filters(f -> f
+        .rewritePath("/management/core-api/(?<seg>.*)", "/actuator/${seg}")
+        .addRequestHeader("X-Management-Source", "gateway"))
+    .uri("http://biometria-core-api:8082"))
+
+.route("management-legacy-soap", r -> r
+    .path("/management/legacy-soap/**")
+    .filters(f -> f
+        .rewritePath("/management/legacy-soap/(?<seg>.*)", "/actuator/${seg}")
+        .addRequestHeader("X-Management-Source", "gateway"))
+    .uri("http://biometria-legacy-soap:8083"))
+
+// Proxy para UIs de monitoramento — sem JWT
+.route("monitoring-prometheus", r -> r
+    .path("/monitoring/prometheus/**")
+    .filters(f -> f.rewritePath("/monitoring/prometheus/(?<seg>.*)", "/${seg}"))
+    .uri("http://prometheus:9090"))
+
+.route("monitoring-grafana", r -> r
+    .path("/monitoring/grafana/**")
+    .filters(f -> f.rewritePath("/monitoring/grafana/(?<seg>.*)", "/${seg}"))
+    .uri("http://grafana:3000"))
+
+.route("monitoring-zipkin", r -> r
+    .path("/monitoring/zipkin/**")
+    .filters(f -> f.rewritePath("/monitoring/zipkin/(?<seg>.*)", "/${seg}"))
+    .uri("http://zipkin:9411"))
+```
+
+Em `GatewaySecurityConfig.java`, liberar as rotas de management e monitoring:
+
+```java
+.pathMatchers("/management/**", "/monitoring/**", "/actuator/**").permitAll()
+.pathMatchers("/api/v1/**").authenticated()
+.anyExchange().denyAll()
+```
+
+> **Segurança:** Em produção, `/management/**` e `/monitoring/**` devem ser protegidos por
+> IP allowlist (rede interna da Vivo) ou por um scope OAuth2 de operador. Na POC, são expostos
+> sem JWT pois os containers de monitoramento não têm client OAuth2 configurado.
+
+---
+
+### 27.8 URLs disponíveis após `docker compose up`
+
+| O que acessar | URL via Gateway (porta 8080) | URL direta |
+|---|---|---|
+| Grafana (dashboards, logs, traces) | `http://localhost:8080/monitoring/grafana` | `http://localhost:3000` |
+| Prometheus UI | `http://localhost:8080/monitoring/prometheus` | `http://localhost:9090` |
+| Zipkin UI | `http://localhost:8080/monitoring/zipkin` | `http://localhost:9411` |
+| Health do core-api | `http://localhost:8080/management/core-api/health` | `http://localhost:8082/actuator/health` |
+| Health do legacy-soap | `http://localhost:8080/management/legacy-soap/health` | `http://localhost:8083/actuator/health` |
+| Prometheus scrape core-api | `http://localhost:8080/management/core-api/prometheus` | `http://localhost:8082/actuator/prometheus` |
+
+---
+
+### 27.9 Estrutura de arquivos Docker a criar
+
+```
+docker/
+├── docker-compose.yml
+├── keycloak/
+│   └── realm-export.json
+├── prometheus/
+│   └── prometheus.yml
+├── promtail/
+│   └── promtail-config.yml
+└── grafana/
+    └── provisioning/
+        └── datasources/
+            └── datasources.yml
+```
+
+O agente responsável pela Rodada 3 (biometria-gateway) deve criar **todos** estes arquivos
+como parte do commit de infraestrutura.
+
+---
+
+### 27.10 Adição às coleções Bruno do gateway
+
+Adicionar ao `bruno/biometria-gateway/`:
+
+```
+├── obs-health-gateway.bru          ← GET /actuator/health
+├── obs-prometheus-gateway.bru      ← GET /actuator/prometheus (verifica biometria_* metrics)
+├── obs-health-core-api.bru         ← GET /management/core-api/health
+├── obs-health-legacy-soap.bru      ← GET /management/legacy-soap/health
+└── obs-prometheus-core-api.bru     ← GET /management/core-api/prometheus
+```
+
+### 27.11 Cenários E2E adicionais no GatewayE2ETest
+
+Adicionar ao `GatewayE2ETest`:
+
+```java
+// Cenário 7: health do gateway retorna UP
+// GET /actuator/health → 200, status: UP
+
+// Cenário 8: management proxy core-api health
+// GET /management/core-api/health → 200 (WireMock responde em :8082/actuator/health)
+
+// Cenário 9: prometheus scrape endpoint disponível
+// GET /actuator/prometheus → 200, body contém "gateway_requests_total"
+```
