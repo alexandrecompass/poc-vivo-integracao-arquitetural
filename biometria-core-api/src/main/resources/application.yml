@@ -8,8 +8,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwks-uri: http://localhost:8081/realms/vivo-poc/protocol/openid-connect/certs
-          issuer-uri: http://localhost:8081/realms/vivo-poc
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/vivo-poc}
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8081/realms/vivo-poc/protocol/openid-connect/certs}
 
 soap:
   legacy:
@@ -21,12 +21,12 @@ soap:
 
 internal:
   security:
-    gateway-secret: ${INTERNAL_GATEWAY_SECRET:gateway-internal-secret-poc}
+    gateway-secret: ${INTERNAL_GATEWAY_SECRET:${GATEWAY_SECRET:gateway-secret-poc}}
 
 management:
   zipkin:
     tracing:
-      endpoint: http://localhost:9411/api/v2/spans
+      endpoint: ${ZIPKIN_ENDPOINT:http://localhost:9411/api/v2/spans}
   endpoints:
     web:
       exposure:
@@ -53,6 +53,17 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+    # Aponta para a spec via Gateway (mesma origem do Swagger UI) — evita CORS
+    url: /api-docs
+    disable-swagger-default-url: true
+    oauth:
+      client-id: parceiro-externo
+      client-secret: parceiro-externo-secret
+      # Token vai via Gateway (/auth/token → Keycloak) — sem CORS
+      scopes: biometria:read
+      use-pkce-with-authorization-code-grant: false
+  # Usa X-Forwarded-Host do Gateway como base URL da spec — necessário para CORS-free Try it out
+  use-fqn: false
 
 logging:
   config: classpath:logback-spring.xml
