@@ -1,32 +1,31 @@
-%% C4 Model — C1 System Context
-%% Projeto: POC Vivo – Integração Arquitetural
-%% Artefato: C1-System-Context.mmd
-%% Versão: 1.0
+%% C4 Model - C1 System Context
+%% POC Vivo - Integracao Arquitetural - Biometria Facial
+%% Versao: 1.1 - Corrigido
 
 C4Context
-    title C1 - System Context - POC Vivo Integração Arquitetural
+    title C1 - System Context - Biometria Facial POC Vivo
 
-    Person(parceiro, "Parceiro Externo", "Sistema ou parceiro autorizado que consome a API de biometria facial.")
+    Person(parceiro, "Parceiro Externo", "Consome a API de biometria via REST autorizado")
 
     System_Boundary(vivo, "Ecossistema Vivo") {
-        System(plataforma, "Plataforma de Integração de Biometria", "Expõe API REST versionada e segura para consulta de biometria facial, isolando o legado SOAP.")
-        System(keycloak, "Keycloak", "Provedor OAuth2/OpenID Connect responsável por emitir tokens JWT e controlar escopos de acesso.")
-        System(legado, "Sistema Legado SOAP de Biometria", "Sistema interno que mantém a consulta oficial de biometria facial via SOAP.")
+        System(plataforma, "Plataforma de Biometria", "API REST versionada e segura sobre legado SOAP")
+        System(keycloak, "Keycloak", "OAuth2 e OIDC: emite e valida JWT com escopo biometria:read")
+        System(legado, "Sistema Legado SOAP", "Fonte oficial de biometria facial via SOAP interno")
     }
 
-    Rel(parceiro, keycloak, "Solicita token OAuth2", "HTTPS / Client Credentials")
-    Rel(keycloak, parceiro, "Retorna JWT com escopo biometria:read", "JWT")
-    Rel(parceiro, plataforma, "Consulta biometria facial por CPF", "HTTPS REST /api/v1/biometria/{cpf}")
-    Rel(plataforma, keycloak, "Valida token e metadados de segurança", "JWT / JWKS")
-    Rel(plataforma, legado, "Consulta biometria no legado", "SOAP")
+    Rel(parceiro, keycloak, "1. Solicita token OAuth2", "HTTPS / Client Credentials")
+    Rel(keycloak, parceiro, "2. Retorna JWT assinado", "JWT / Bearer")
+    Rel(parceiro, plataforma, "3. GET /api/v1/biometria/{cpf}", "HTTPS + Bearer JWT")
+    Rel(plataforma, keycloak, "4. Valida assinatura e escopo", "JWKS / OIDC")
+    Rel(plataforma, legado, "5. Consulta biometria por CPF", "SOAP sobre HTTP interno")
 
     UpdateElementStyle(parceiro, $bgColor="#08427b", $fontColor="#ffffff", $borderColor="#073b6f")
     UpdateElementStyle(plataforma, $bgColor="#1168bd", $fontColor="#ffffff", $borderColor="#0b4884")
-    UpdateElementStyle(keycloak, $bgColor="#438dd5", $fontColor="#ffffff", $borderColor="#2e6295")
-    UpdateElementStyle(legado, $bgColor="#999999", $fontColor="#ffffff", $borderColor="#6b6b6b")
+    UpdateElementStyle(keycloak, $bgColor="#5d6d7e", $fontColor="#ffffff", $borderColor="#424949")
+    UpdateElementStyle(legado, $bgColor="#797d7f", $fontColor="#ffffff", $borderColor="#566573")
 
-    UpdateRelStyle(parceiro, keycloak, $textColor="#333333", $lineColor="#707070")
-    UpdateRelStyle(keycloak, parceiro, $textColor="#333333", $lineColor="#707070")
-    UpdateRelStyle(parceiro, plataforma, $textColor="#333333", $lineColor="#1168bd")
-    UpdateRelStyle(plataforma, keycloak, $textColor="#333333", $lineColor="#707070")
-    UpdateRelStyle(plataforma, legado, $textColor="#333333", $lineColor="#999999")
+    UpdateRelStyle(parceiro, keycloak, $textColor="#555555", $lineColor="#888888")
+    UpdateRelStyle(keycloak, parceiro, $textColor="#555555", $lineColor="#888888")
+    UpdateRelStyle(parceiro, plataforma, $textColor="#1168bd", $lineColor="#1168bd")
+    UpdateRelStyle(plataforma, keycloak, $textColor="#555555", $lineColor="#888888")
+    UpdateRelStyle(plataforma, legado, $textColor="#797d7f", $lineColor="#797d7f")

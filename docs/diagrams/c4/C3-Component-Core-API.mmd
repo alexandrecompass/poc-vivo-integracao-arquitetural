@@ -1,66 +1,81 @@
-%% C4 Model - C3 Component Diagram
-%% Projeto: POC Vivo – Integração Arquitetural
-%% Artefato: C3-Component-Core-API.mmd
-%% Versão: 1.0
+%% C4 Model - C3 Component Diagram - Biometria Core API
+%% POC Vivo - Integracao Arquitetural
+%% Versao: 1.1 - Corrigido: novos componentes de seguranca, direcoes de relacao, nomes sem caracteres especiais
 
 C4Component
-title C3 - Component Diagram - Biometria Core API
+    title C3 - Component Diagram - Biometria Core API
 
-Person(parceiro, "Parceiro Externo", "Consumidor autorizado")
+    Person(parceiro, "Parceiro Externo", "Consome a API de biometria")
+    Container(gateway, "API Gateway", "Spring Cloud Gateway", "Valida JWT e injeta X-Gateway-Secret")
+    Container_Ext(legacySoap, "Legacy SOAP Service", "Spring Boot WS", "Servico legado com validacao X-Core-Secret")
 
-Container(gateway, "API Gateway", "Spring Cloud Gateway", "Valida JWT, aplica políticas e encaminha requisições")
-Container_Ext(legacySoap, "Legacy SOAP Service", "Spring Boot SOAP", "Serviço legado fictício para consulta de biometria")
+    Container_Boundary(core, "Biometria Core API") {
+        Component(gatewayFilter, "GatewaySecretFilter", "Servlet Filter", "Bloqueia acesso sem X-Gateway-Secret valido")
+        Component(corrFilter, "CorrelationIdFilter", "Servlet Filter", "Captura ou gera X-Correlation-Id no MDC")
+        Component(logFilter, "RequestLoggingFilter", "Servlet Filter", "Loga entrada, saida, status e duracao")
 
-Container_Boundary(core, "Biometria Core API") {
+        Component(biometriaCtrl, "BiometriaController", "REST Controller", "GET /api/v1/biometria/{cpf} autenticado")
+        Component(cpfCtrl, "CpfValidadorController", "REST Controller", "GET /api/v1/cpf/{cpf}/validar publico")
 
-    Component(correlationFilter, "CorrelationIdFilter", "Servlet Filter", "Garante X-Correlation-Id em todas as requisições")
-    Component(loggingFilter, "RequestLoggingFilter", "Servlet Filter", "Registra logs estruturados de entrada e saída")
+        Component(consultarUC, "ConsultarBiometriaUseCase", "Use Case", "Orquestra consulta e registra metricas")
+        Component(validarUC, "ValidarCpfUseCase", "Use Case", "Executa algoritmo do digito verificador")
 
-    Component(controller, "BiometriaController", "REST Controller", "Expõe GET /api/v1/biometria/{cpf}")
-    Component(validator, "BiometriaRequestValidator / Cpf", "Validator / Value Object", "Valida e normaliza CPF")
-    Component(responseMapper, "BiometriaResponseMapper", "Mapper", "Converte modelo interno para DTO REST v1")
+        Component(cpfVO, "Cpf", "Value Object", "Encapsula e valida CPF com algoritmo de digito")
+        Component(domain, "Biometria", "Domain Model", "Modelo interno com status e origem LEGADO_SOAP")
 
-    Component(useCase, "ConsultarBiometriaUseCase", "Application Use Case", "Orquestra a consulta de biometria")
-    Component(domain, "Biometria Domain Model", "Domain Model", "Representa CPF, biometria, status e origem")
+        Component(port, "BiometriaLegadoPort", "Output Port", "Interface de saida para consulta ao legado")
+        Component(adapter, "SoapBiometriaLegadoAdapter", "SOAP Adapter", "Implementa a porta. Injeta X-Core-Secret.")
+        Component(soapClient, "SoapBiometriaClient", "SOAP Client", "Chama WebServiceTemplate com X-Core-Secret")
+        Component(soapMapper, "SoapBiometriaMapper", "Mapper", "Converte resposta SOAP para modelo de dominio")
+        Component(faultTrans, "SoapFaultTranslator", "Translator", "Converte SOAP Fault em excecao de dominio")
 
-    Component(port, "BiometriaLegadoPort", "Output Port", "Define contrato interno para consulta ao legado")
-    Component(adapter, "SoapBiometriaLegadoAdapter", "SOAP Adapter", "Implementa a porta usando o serviço SOAP legado")
-    Component(soapClient, "SoapBiometriaClient", "SOAP Client", "Executa a chamada técnica ao serviço SOAP")
-    Component(soapMapper, "SoapBiometriaMapper", "Mapper", "Converte resposta SOAP para modelo interno")
-    Component(faultTranslator, "SoapFaultTranslator", "Error Translator", "Traduz SOAP Faults para exceções internas")
+        Component(errHandler, "GlobalExceptionHandler", "Advice", "Mapeia excecoes para ErrorResponse padronizado")
+        Component(metrics, "BiometriaMetrics", "Micrometer", "Contadores e timers de consultas e latencia SOAP")
+        Component(cpfMasker, "CpfMasker", "Utility", "Mascara CPF nos logs: *********XX")
+    }
 
-    Component(exceptionHandler, "GlobalExceptionHandler", "Exception Handler", "Converte exceções internas em respostas REST padronizadas")
-    Component(metrics, "BiometriaMetrics", "Micrometer / Actuator", "Registra métricas de consultas, erros e latência")
-}
+    Rel(parceiro, gateway, "HTTPS + Bearer JWT", "HTTPS REST")
+    Rel(gateway, gatewayFilter, "Requisicao com X-Gateway-Secret", "HTTP interno")
+    Rel(gatewayFilter, corrFilter, "Passa apos validar secret")
+    Rel(corrFilter, logFilter, "MDC com correlationId populado")
+    Rel(logFilter, biometriaCtrl, "Requisicao autenticada e rastreada")
+    Rel(gateway, cpfCtrl, "GET /api/v1/cpf/{cpf}/validar sem secret", "HTTP interno")
 
-Rel(parceiro, gateway, "Chama API", "HTTPS REST")
-Rel(gateway, correlationFilter, "Encaminha requisição autorizada", "HTTP REST")
-Rel(correlationFilter, loggingFilter, "Propaga correlation ID")
-Rel(loggingFilter, controller, "Encaminha requisição")
+    Rel(biometriaCtrl, cpfVO, "Cria e valida CPF via Cpf.of()")
+    Rel(biometriaCtrl, consultarUC, "executar(cpf)")
+    Rel(cpfCtrl, validarUC, "executar(rawCpf)")
+    Rel(validarUC, cpfVO, "Cpf.isValido(digits)")
 
-Rel(controller, validator, "Valida CPF")
-Rel(controller, useCase, "Executa caso de uso")
-Rel(useCase, port, "Consulta biometria")
-Rel(adapter, port, "Implementa")
-Rel(adapter, soapClient, "Chama serviço SOAP")
-Rel(adapter, soapMapper, "Mapeia resposta")
-Rel(adapter, faultTranslator, "Traduz falhas")
-Rel(soapClient, legacySoap, "Consulta biometria", "SOAP / HTTP")
+    Rel(consultarUC, port, "consultarPorCpf(cpf)")
+    Rel(consultarUC, domain, "Usa modelo interno")
+    Rel(consultarUC, metrics, "Incrementa contadores")
 
-Rel(useCase, domain, "Usa modelo interno")
-Rel(controller, responseMapper, "Monta resposta REST")
-Rel(exceptionHandler, controller, "Padroniza erros")
-Rel(metrics, useCase, "Registra métricas do caso de uso")
-Rel(metrics, adapter, "Registra latência SOAP")
+    Rel(adapter, port, "Implementa BiometriaLegadoPort")
+    Rel(adapter, soapClient, "consultar(cpf.getValor())")
+    Rel(adapter, soapMapper, "toDomain(result, cpf)")
+    Rel(adapter, faultTrans, "traduzir(SoapFaultClientException)")
+    Rel(adapter, metrics, "Registra latencia SOAP")
 
-UpdateElementStyle(controller, $bgColor="#1168bd", $fontColor="#ffffff")
-UpdateElementStyle(useCase, $bgColor="#0b6e4f", $fontColor="#ffffff")
-UpdateElementStyle(port, $bgColor="#6c5ce7", $fontColor="#ffffff")
-UpdateElementStyle(adapter, $bgColor="#e17055", $fontColor="#ffffff")
-UpdateElementStyle(soapClient, $bgColor="#d35400", $fontColor="#ffffff")
-UpdateElementStyle(legacySoap, $bgColor="#999999", $fontColor="#ffffff")
-UpdateElementStyle(domain, $bgColor="#00b894", $fontColor="#ffffff")
-UpdateElementStyle(exceptionHandler, $bgColor="#c0392b", $fontColor="#ffffff")
-UpdateElementStyle(correlationFilter, $bgColor="#0984e3", $fontColor="#ffffff")
-UpdateElementStyle(loggingFilter, $bgColor="#0984e3", $fontColor="#ffffff")
-UpdateElementStyle(metrics, $bgColor="#2d3436", $fontColor="#ffffff")
+    Rel(soapClient, legacySoap, "SOAP + X-Core-Secret", "SOAP sobre HTTP interno")
+
+    Rel(biometriaCtrl, cpfMasker, "Mascara CPF na resposta e logs")
+    Rel(logFilter, cpfMasker, "Mascara CPF antes de logar")
+
+    UpdateElementStyle(gatewayFilter, $bgColor="#c0392b", $fontColor="#ffffff")
+    UpdateElementStyle(corrFilter, $bgColor="#0984e3", $fontColor="#ffffff")
+    UpdateElementStyle(logFilter, $bgColor="#0984e3", $fontColor="#ffffff")
+    UpdateElementStyle(biometriaCtrl, $bgColor="#1168bd", $fontColor="#ffffff")
+    UpdateElementStyle(cpfCtrl, $bgColor="#1168bd", $fontColor="#ffffff")
+    UpdateElementStyle(consultarUC, $bgColor="#0b6e4f", $fontColor="#ffffff")
+    UpdateElementStyle(validarUC, $bgColor="#0b6e4f", $fontColor="#ffffff")
+    UpdateElementStyle(cpfVO, $bgColor="#00b894", $fontColor="#ffffff")
+    UpdateElementStyle(domain, $bgColor="#00b894", $fontColor="#ffffff")
+    UpdateElementStyle(port, $bgColor="#6c5ce7", $fontColor="#ffffff")
+    UpdateElementStyle(adapter, $bgColor="#e17055", $fontColor="#ffffff")
+    UpdateElementStyle(soapClient, $bgColor="#d35400", $fontColor="#ffffff")
+    UpdateElementStyle(soapMapper, $bgColor="#d35400", $fontColor="#ffffff")
+    UpdateElementStyle(faultTrans, $bgColor="#d35400", $fontColor="#ffffff")
+    UpdateElementStyle(errHandler, $bgColor="#922b21", $fontColor="#ffffff")
+    UpdateElementStyle(metrics, $bgColor="#2d3436", $fontColor="#ffffff")
+    UpdateElementStyle(cpfMasker, $bgColor="#636e72", $fontColor="#ffffff")
+    UpdateElementStyle(legacySoap, $bgColor="#797d7f", $fontColor="#ffffff")

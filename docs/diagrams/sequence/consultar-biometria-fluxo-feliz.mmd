@@ -1,66 +1,71 @@
-%% Sequence Diagram - Fluxo Feliz
-%% Projeto: POC Vivo – Integração Arquitetural
-%% Artefato: consultar-biometria-fluxo-feliz.mmd
-%% Versão: 1.0
+%% Sequence Diagram - Fluxo Feliz - Consulta de Biometria
+%% POC Vivo - Integracao Arquitetural
+%% Versao: 1.1 - Atualizado com X-Gateway-Secret, X-Core-Secret e GatewaySecretFilter
 
 sequenceDiagram
     autonumber
 
-    actor Partner as Parceiro Externo
+    actor Parceiro as Parceiro Externo
     participant Keycloak
     participant Gateway as API Gateway
-    participant Corr as CorrelationIdFilter
+    participant GwFilter as GatewaySecretFilter
+    participant CorrFilter as CorrelationIdFilter
     participant Controller as BiometriaController
     participant UseCase as ConsultarBiometriaUseCase
-    participant Port as BiometriaLegadoPort
     participant Adapter as SoapBiometriaLegadoAdapter
     participant SoapClient as SoapBiometriaClient
     participant Legacy as Legacy SOAP Service
     participant H2 as H2 Database
-    participant SoapMapper as SoapBiometriaMapper
-    participant ResponseMapper as BiometriaResponseMapper
     participant Metrics as BiometriaMetrics
 
-    Note over Partner,Keycloak: Autenticação
+    Note over Parceiro,Keycloak: Fase 1 - Autenticacao OAuth2
 
-    Partner->>Keycloak: Solicita token OAuth2 (Client Credentials)
-    Keycloak-->>Partner: JWT (scope: biometria:read)
+    Parceiro->>Keycloak: POST /token (client_credentials, scope=biometria:read)
+    Keycloak-->>Parceiro: JWT assinado (scope: biometria:read)
 
-    Note over Partner,Gateway: Chamada REST
+    Note over Parceiro,Gateway: Fase 2 - Chamada REST via Gateway
 
-    Partner->>Gateway: GET /api/v1/biometria/{cpf}\nAuthorization: Bearer JWT
-    Gateway->>Gateway: Valida JWT\nIssuer\nExpiração\nScope
+    Parceiro->>Gateway: GET /api/v1/biometria/{cpf} + Bearer JWT
+    Gateway->>Gateway: Valida JWT (assinatura, issuer, expiracao, scope)
     Gateway->>Gateway: Gera ou propaga X-Correlation-Id
+    Gateway->>GwFilter: Requisicao + X-Gateway-Secret + X-Correlation-Id
 
-    Gateway->>Corr: Encaminha requisição
-    Corr->>Controller: Contexto com Correlation ID
+    Note over GwFilter,CorrFilter: Fase 3 - Filtros de Seguranca e Observabilidade
 
-    Controller->>Controller: Valida e normaliza CPF
-    Controller->>UseCase: consultarBiometria(cpf)
+    GwFilter->>GwFilter: Valida X-Gateway-Secret
+    GwFilter->>CorrFilter: Passa apos validar secret
+    CorrFilter->>CorrFilter: Insere correlationId no MDC
+    CorrFilter->>Controller: Requisicao rastreada e autorizada
 
-    UseCase->>Port: consultarPorCpf(cpf)
-    Port->>Adapter: Implementação da porta
+    Note over Controller,Adapter: Fase 4 - Execucao do Caso de Uso
 
-    Adapter->>Adapter: Monta request SOAP
-    Adapter->>SoapClient: consultarBiometriaPorCpf(cpf)
+    Controller->>Controller: Cpf.of(cpf) - valida digito verificador
+    Controller->>UseCase: executar(cpf)
+    UseCase->>Metrics: incrementarTotal()
+    UseCase->>Adapter: consultarPorCpf(cpf)
 
-    SoapClient->>Legacy: SOAP Request
-    Legacy->>H2: Consulta biometria
-    H2-->>Legacy: Dados fictícios
-    Legacy-->>SoapClient: SOAP Response
+    Note over SoapClient,Legacy: Fase 5 - Integracao com Legado SOAP
 
-    SoapClient-->>Adapter: Resposta SOAP
-    Adapter->>SoapMapper: Converter SOAP → Domínio
-    SoapMapper-->>Adapter: Modelo de domínio
+    Adapter->>SoapClient: consultar(cpf.getValor())
+    SoapClient->>SoapClient: Injeta X-Core-Secret no header SOAP
+    SoapClient->>SoapClient: Injeta X-Correlation-Id no header SOAP
+    SoapClient->>Legacy: SOAP ConsultarBiometriaRequest + X-Core-Secret
+    Legacy->>Legacy: InternalSecretInterceptor valida X-Core-Secret
+    Legacy->>H2: SELECT * FROM biometria WHERE cpf = ?
+    H2-->>Legacy: Registro de biometria
+    Legacy-->>SoapClient: SOAP ConsultarBiometriaResponse
 
-    Adapter-->>UseCase: Biometria
-    UseCase->>Metrics: Registra métricas
-    UseCase-->>Controller: Resultado
+    Note over Adapter,Controller: Fase 6 - Traducao e Resposta
 
-    Controller->>ResponseMapper: Domínio → DTO REST
-    ResponseMapper-->>Controller: BiometriaResponse
+    SoapClient-->>Adapter: Resultado bruto SOAP
+    Adapter->>Adapter: SoapBiometriaMapper.toDomain(result, cpf)
+    Adapter-->>UseCase: Biometria (modelo de dominio)
+    UseCase->>Metrics: incrementarSucesso()
+    UseCase-->>Controller: Biometria
 
-    Controller-->>Gateway: HTTP 200
-    Gateway-->>Partner: HTTP 200 + JSON
+    Controller->>Controller: BiometriaResponseMapper.toResponse(biometria, correlationId)
+    Controller->>Controller: CpfMasker.mask(cpf) - mascara nos logs
+    Controller-->>Gateway: HTTP 200 + BiometriaResponse + X-Correlation-Id
+    Gateway-->>Parceiro: HTTP 200 + JSON + X-Correlation-Id
 
-    Note over Gateway,Partner: Logs estruturados e Correlation ID disponíveis ponta a ponta
+    Note over Gateway,Parceiro: correlationId presente em todos os logs e na resposta

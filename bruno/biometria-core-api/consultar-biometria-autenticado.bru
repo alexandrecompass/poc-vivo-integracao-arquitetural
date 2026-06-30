@@ -1,0 +1,25 @@
+meta {
+  name: Consultar biometria autenticado
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/biometria/52998224725
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Gateway-Secret: {{gatewaySecret}}
+  X-Correlation-Id: test-correlation-id-003
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains biometriaDisponivel
+}

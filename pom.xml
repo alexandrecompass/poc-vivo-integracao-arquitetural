@@ -21,7 +21,7 @@
 
   <modules>
     <module>biometria-legacy-soap</module>
-<!--    <module>biometria-core-api</module>-->
+    <module>biometria-core-api</module>
 <!--    <module>biometria-gateway</module>-->
   </modules>
 
@@ -57,7 +57,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.11</version>
+          <version>0.8.13</version>
           <executions>
             <execution>
               <id>prepare-agent</id>
