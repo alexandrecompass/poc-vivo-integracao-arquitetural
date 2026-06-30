@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'biometria-gateway'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['biometria-gateway:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'gateway'
+
+  - job_name: 'biometria-core-api'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['biometria-core-api:8082']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'core-api'
+
+  - job_name: 'biometria-legacy-soap'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['biometria-legacy-soap:8083']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'legacy-soap'

@@ -1,0 +1,91 @@
+{
+  "id": "5f55cb80-6e5e-4c0e-9e4f-1fc978bd2092",
+  "realm": "vivo-poc",
+  "displayName": "Vivo POC",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "defaultSignatureAlgorithm": "RS256",
+  "revokeRefreshToken": false,
+  "refreshTokenMaxReuse": 0,
+  "accessTokenLifespan": 300,
+  "clientSessionIdleTimeout": 1800,
+  "clientSessionMaxLifespan": 3600,
+  "roles": {
+    "realm": [
+      {
+        "name": "offline_access",
+        "description": "${role_offline-access}"
+      },
+      {
+        "name": "uma_authorization",
+        "description": "${role_uma_authorization}"
+      }
+    ]
+  },
+  "clientScopes": [
+    {
+      "id": "b1cfbe2a-f9b0-4680-80a3-43d4500188e6",
+      "name": "biometria:read",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "consent.screen.text": "Acesso de leitura de biometria"
+      },
+      "protocolMappers": []
+    }
+  ],
+  "clients": [
+    {
+      "id": "47f8ad61-82c6-42b7-afbe-c6f6ff69fe30",
+      "clientId": "parceiro-externo",
+      "name": "Parceiro Externo",
+      "description": "Client credentials para consumo da biometria",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "secret": "parceiro-externo-secret",
+      "protocol": "openid-connect",
+      "frontchannelLogout": true,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email",
+        "biometria:read"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "client_credentials.use_refresh_token": "false",
+        "use.jwks.url": "false"
+      },
+      "webOrigins": [
+        "http://localhost:8080",
+        "http://localhost:8082"
+      ],
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:8082/*"
+      ]
+    }
+  ]
+}

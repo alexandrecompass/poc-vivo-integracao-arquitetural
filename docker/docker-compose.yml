@@ -1,0 +1,121 @@
+name: biometria
+
+networks:
+  biometria-net:
+    driver: bridge
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: keycloak
+    command:
+      - start-dev
+      - --import-realm
+      - --http-port=8080
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    networks:
+      - biometria-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bash",
+          "-c",
+          "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /realms/vivo-poc/.well-known/openid-configuration HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep '200 OK' <&3 > /dev/null"
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 25s
+
+  biometria-legacy-soap:
+    build:
+      context: ..
+      dockerfile: biometria-legacy-soap/Dockerfile
+    container_name: biometria-legacy-soap
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      INTERNAL_CORE_SECRET: ${CORE_SECRET}
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8083:8083"
+    networks:
+      - biometria-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health | grep UP > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+
+  biometria-core-api:
+    build:
+      context: ..
+      dockerfile: biometria-core-api/Dockerfile
+    container_name: biometria-core-api
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KEYCLOAK_ISSUER_URI: http://localhost:8081/realms/vivo-poc
+      KEYCLOAK_JWKS_URI: http://host.docker.internal:8081/realms/vivo-poc/protocol/openid-connect/certs
+      INTERNAL_GATEWAY_SECRET: ${GATEWAY_SECRET}
+      INTERNAL_CORE_SECRET: ${CORE_SECRET}
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8082:8082"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      biometria-legacy-soap:
+        condition: service_healthy
+    networks:
+      - biometria-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/actuator/health | grep UP > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 25s
+
+  biometria-gateway:
+    build:
+      context: ..
+      dockerfile: biometria-gateway/Dockerfile
+    container_name: biometria-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      KEYCLOAK_ISSUER_URI: http://localhost:8081/realms/vivo-poc
+      KEYCLOAK_JWKS_URI: http://host.docker.internal:8081/realms/vivo-poc/protocol/openid-connect/certs
+      CORE_API_URL: http://biometria-core-api:8082
+      LEGACY_SOAP_URL: http://biometria-legacy-soap:8083
+      PROMETHEUS_URL: http://prometheus:9090
+      GRAFANA_URL: http://grafana:3000
+      ZIPKIN_URL: http://zipkin:9411
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      biometria-core-api:
+        condition: service_healthy
+      biometria-legacy-soap:
+        condition: service_healthy
+    networks:
+      - biometria-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep UP > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 25s
