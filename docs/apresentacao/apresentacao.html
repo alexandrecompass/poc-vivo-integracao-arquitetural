@@ -553,36 +553,8 @@
   .callout-text { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.6; }
   .callout.green { background: rgba(0,200,150,0.12); border-color: #00c896; }
 
-  /* THUMBNAIL NAV */
-  .slide-thumbnails {
-    max-width: var(--slide-w);
-    margin: 16px auto 0;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 0 20px;
-  }
-  .thumb {
-    width: 60px;
-    height: 34px;
-    background: rgba(102,0,153,0.3);
-    border: 2px solid rgba(102,0,153,0.2);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    color: rgba(255,255,255,0.4);
-    font-weight: 600;
-    transition: all 0.2s;
-  }
-  .thumb:hover, .thumb.active {
-    background: var(--vivo-purple);
-    border-color: var(--vivo-purple-light);
-    color: #fff;
-  }
+  /* THUMBNAIL NAV — oculto */
+  .thumb-strip, .slide-thumbnails, .thumb { display: none; }
 
   @media (max-width: 1320px) {
     .slide, .slides-container {
@@ -1325,38 +1297,30 @@ TOKEN=$(curl -s -X POST \
 
 <span class="cmd-comment"># 4. Consultar biometria</span>
 curl -s -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8080/api/v1/biometria/12345678909 | jq
+  http://localhost:8080/api/v1/biometria/1234567890
 
-<span class="cmd-comment"># 5. Smoke test completo</span>
-bash scripts/test-api.sh</div>
+<span class="cmd-comment"># 5. Swagger UI (autenticar com oauth2)</span>
+open http://localhost:8080/swagger-ui/index.html
+</div>
       </div>
       <div>
         <div class="card">
-          <div class="card-title">🔌 Portas dos Serviços</div>
+          <div class="card-title">⚙️ Desenvolvimento Local (sem Docker)</div>
           <div class="card-body">
-            <table class="data-table" style="margin-top:8px">
-              <thead><tr><th>Serviço</th><th>Porta</th><th>Acesso</th></tr></thead>
-              <tbody>
-                <tr><td>Gateway</td><td>:8080</td><td><span class="tag">Público</span></td></tr>
-                <tr><td>Keycloak</td><td>:8081</td><td><span class="tag">Público</span></td></tr>
-                <tr><td>Core API</td><td>:8082</td><td><span class="tag">Interno</span></td></tr>
-                <tr><td>Legacy SOAP</td><td>:8083</td><td><span class="tag">Interno</span></td></tr>
-                <tr><td>Grafana</td><td>:3000</td><td><span class="tag">Ops</span></td></tr>
-                <tr><td>Prometheus</td><td>:9090</td><td><span class="tag">Ops</span></td></tr>
-                <tr><td>Zipkin</td><td>:9411</td><td><span class="tag">Ops</span></td></tr>
-                <tr><td>Loki</td><td>:3100</td><td><span class="tag">Interno</span></td></tr>
-              </tbody>
-            </table>
+            1. biometria-legacy-soap → porta 8083<br>
+            2. biometria-core-api → porta 8082<br>
+            3. biometria-gateway → porta 8080<br>
+            Keycloak separado: docker run ou serviço local
           </div>
         </div>
         <div class="card green">
-          <div class="card-title">📘 Módulo Isolado (dev)</div>
+          <div class="card-title">🔗 Links Úteis</div>
           <div class="card-body">
-            <code style="font-family:monospace;font-size:11px;color:#00c896">
-              cd biometria-legacy-soap && mvn spring-boot:run<br>
-              cd biometria-core-api && mvn spring-boot:run<br>
-              cd biometria-gateway && mvn spring-boot:run
-            </code>
+            <a href="http://localhost:8080/swagger-ui/index.html" style="color:#00c896">Swagger UI</a> ·
+            <a href="http://localhost:3000/d/vivo-biometria-poc" style="color:#00c896">Grafana</a> ·
+            <a href="http://localhost:9411" style="color:#00c896">Zipkin</a> ·
+            <a href="http://localhost:8083/h2-console" style="color:#00c896">H2 Console</a> ·
+            <a href="http://localhost:8081/admin" style="color:#00c896">Keycloak Admin</a>
           </div>
         </div>
       </div>
@@ -1367,61 +1331,41 @@ bash scripts/test-api.sh</div>
   <!-- SLIDE 17 — ENCERRAMENTO -->
   <!-- ══════════════════════════════════════════════ -->
   <div class="slide slide-cover" id="slide-17" style="background:linear-gradient(135deg,#0d001a 0%,#1a0033 35%,#2d0060 65%,#660099 100%);">
-    <div class="cover-eyebrow">Resultados e Entregáveis</div>
-    <div class="cover-title">
-      POC <span>Implementada</span><br>e Testada
-    </div>
-    <div class="cover-divider"></div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:580px;position:relative;margin-bottom:32px;">
-      <div class="kv-item"><div class="kv-label">Módulos Java</div><div class="kv-value">3 microserviços</div></div>
-      <div class="kv-item"><div class="kv-label">Camadas de segurança</div><div class="kv-value">5 camadas</div></div>
-      <div class="kv-item"><div class="kv-label">Observabilidade</div><div class="kv-value">Métricas + Logs + Traces</div></div>
-      <div class="kv-item"><div class="kv-label">Dashboards</div><div class="kv-value">Grafana provisionado</div></div>
-      <div class="kv-item"><div class="kv-label">Estratégia de migração</div><div class="kv-value">Strangler Fig 3 fases</div></div>
-      <div class="kv-item"><div class="kv-label">Conformidade</div><div class="kv-value">LGPD Art. 11</div></div>
-    </div>
-    <div style="display:flex;gap:12px;position:relative;flex-wrap:wrap;">
-      <a href="http://localhost:3000/d/vivo-biometria-poc" target="_blank" style="background:var(--vivo-purple);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">📊 Grafana Dashboard</a>
-      <a href="http://localhost:9411" target="_blank" style="background:#d35400;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">🔍 Zipkin Traces</a>
-      <a href="http://localhost:9090" target="_blank" style="background:#1e90ff;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">🔥 Prometheus</a>
-    </div>
-    <div class="cover-logo-area" style="top:auto;bottom:40px;transform:none;">
-      <div class="vivo-badge">vivo</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-top:6px;">Arquitetura de Integração<br>Junho 2026</div>
+    <div class="cover-eyebrow">Obrigado</div>
+    <h1 class="cover-title">POC Biometria Facial</h1>
+    <p class="cover-sub">Arquitetura de Integração · Vivo / Telefônica</p>
+    <div class="cover-meta" style="margin-top:40px">
+      <div class="cover-meta-item"><span class="cover-meta-label">Documentação</span><span class="cover-meta-value">docs/PADROES-DE-PROJETO.md</span></div>
+      <div class="cover-meta-item"><span class="cover-meta-label">API Docs</span><span class="cover-meta-value">localhost:8080/swagger-ui/index.html</span></div>
+      <div class="cover-meta-item"><span class="cover-meta-label">Observabilidade</span><span class="cover-meta-value">localhost:3000 (Grafana)</span></div>
+      <div class="cover-meta-item"><span class="cover-meta-label">Stack</span><span class="cover-meta-value">Java 17 · Spring Boot 3.2 · Keycloak 24</span></div>
     </div>
   </div>
 
-</div>
+</div><!-- /slides-container -->
 
-<!-- THUMBNAILS -->
-<div class="slide-thumbnails" id="thumbnails"></div>
+<div class="thumb-strip" id="thumb-strip" style="display:none"></div>
 
 <script>
   var TOTAL = 17;
   var current = 1;
 
-  var titles = [
-    'Capa', 'Contexto', 'Arquitetura',
-    'C1 Context', 'C2 Container', 'C3 Components', 'Sequência',
-    'Fluxo', 'Clean Arch', 'Segurança', 'Observabilidade',
-    'Links', 'Migração', 'Testes', 'Docker', 'Encerramento'
-  ];
-
   function goTo(n) {
     if (n < 1 || n > TOTAL || n === current) return;
-    var prev = document.getElementById('slide-' + current);
-    if (prev) prev.classList.remove('active');
+    var oldEl = document.getElementById('slide-' + current);
+    var newEl = document.getElementById('slide-' + n);
+    if (!oldEl || !newEl) return;
+    oldEl.classList.remove('active');
+    newEl.classList.add('active');
     current = n;
-    var next = document.getElementById('slide-' + current);
-    if (next) next.classList.add('active');
     document.getElementById('slide-counter').textContent = current + ' / ' + TOTAL;
     document.getElementById('btn-prev').disabled = (current === 1);
     document.getElementById('btn-next').disabled = (current === TOTAL);
     var thumbs = document.querySelectorAll('.thumb');
-    for (var k = 0; k < thumbs.length; k++) {
-      thumbs[k].classList.toggle('active', k + 1 === current);
-    }
-    window.scrollTo({ top: 60, behavior: 'smooth' });
+    thumbs.forEach(function(t) { t.classList.remove('active'); });
+    var activeThumb = document.getElementById('thumb-' + current);
+    if (activeThumb) activeThumb.classList.add('active');
+    newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function navigate(dir) {
@@ -1430,12 +1374,24 @@ bash scripts/test-api.sh</div>
 
   // Build thumbnails
   (function() {
-    var container = document.getElementById('thumbnails');
+    var strip = document.getElementById('thumb-strip');
     for (var j = 1; j <= TOTAL; j++) {
+      var t = document.createElement('div');
+      t.className = 'thumb' + (j === 1 ? ' active' : '');
+      t.id = 'thumb-' + j;
+      t.textContent = j;
       (function(idx) {
-        var t = document.createElement('div');
-        t.className = 'thumb' + (idx === 1 ? ' active' : '');
-        t.title = titles[idx - 1];
-        t.textContent = idx;
         t.addEventListener('click', function() { goTo(idx); });
-        contai
+      })(j);
+      strip.appendChild(t);
+    }
+  })();
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+</script>
+</body>
+</html>
