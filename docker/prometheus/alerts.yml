@@ -1,0 +1,108 @@
+groups:
+  - name: biometria.availability
+    interval: 30s
+    rules:
+      - alert: BiometriaServiceDown
+        expr: up{job=~"biometria-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          squad: integração
+        annotations:
+          summary: "Serviço {{ $labels.job }} está DOWN"
+          description: "O serviço {{ $labels.job }} (instância {{ $labels.instance }}) está inacessível há mais de 1 minuto."
+          runbook: "http://localhost:3000/d/vivo-biometria-poc?var-job={{ $labels.job }}"
+
+      - alert: BiometriaGatewayDown
+        expr: up{job="biometria-gateway"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          squad: integração
+        annotations:
+          summary: "Gateway de biometria DOWN — impacto total nos parceiros"
+          description: "biometria-gateway (porta 8080) está DOWN. Todos os parceiros perdem acesso imediatamente."
+          runbook: "http://localhost:3000/d/vivo-biometria-poc"
+
+  - name: biometria.latency
+    interval: 1m
+    rules:
+      - alert: BiometriaLatenciaAltaP95
+        expr: histogram_quantile(0.95, sum(rate(biometria_legado_latencia_seconds_bucket[5m])) by (le)) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+          squad: integração
+        annotations:
+          summary: "Latência p95 do SOAP legado acima de 500ms"
+          description: "A latência p95 da chamada SOAP legado está em {{ $value | humanizeDuration }}. Threshold: 500ms."
+          dashboard: "http://localhost:3000/d/vivo-biometria-poc?viewPanel=11"
+
+      - alert: BiometriaLatenciaCriticaP99
+        expr: histogram_quantile(0.99, sum(rate(biometria_legado_latencia_seconds_bucket[5m])) by (le)) > 4.5
+        for: 2m
+        labels:
+          severity: critical
+          squad: integração
+        annotations:
+          summary: "Latência p99 próxima do timeout de 5s — risco de cascade failure"
+          description: "A latência p99 está em {{ $value | humanizeDuration }}. Timeout configurado: 5000ms. Risco de timeout em cascata."
+          dashboard: "http://localhost:3000/d/vivo-biometria-poc?viewPanel=11"
+
+  - name: biometria.errors
+    interval: 1m
+    rules:
+      - alert: BiometriaAltoIndiceErros
+        expr: |
+          sum(rate(biometria_consultas_total{resultado="erro"}[5m]))
+          /
+          sum(rate(biometria_consultas_total[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          squad: integração
+        annotations:
+          summary: "Taxa de erro de biometria acima de 5%"
+          description: "{{ $value | humanizePercentage }} das consultas de biometria estão retornando erro. Threshold: 5%."
+          dashboard: "http://localhost:3000/d/vivo-biometria-poc?viewPanel=10"
+
+      - alert: BiometriaErrosCriticos
+        expr: |
+          sum(rate(biometria_consultas_total{resultado="erro"}[5m]))
+          /
+          sum(rate(biometria_consultas_total[5m])) > 0.20
+        for: 1m
+        labels:
+          severity: critical
+          squad: integração
+        annotations:
+          summary: "CRÍTICO: 20%+ das consultas de biometria falhando"
+          description: "{{ $value | humanizePercentage }} das consultas falham. Provável falha no legado SOAP ou Gateway."
+          dashboard: "http://localhost:3000/d/vivo-biometria-poc?viewPanel=10"
+
+  - name: biometria.jvm
+    interval: 2m
+    rules:
+      - alert: JvmHeapAlto
+        expr: |
+          jvm_memory_used_bytes{area="heap", job="biometria-core-api"}
+          /
+          jvm_memory_max_bytes{area="heap", job="biometria-core-api"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          squad: platform
+        annotations:
+          summary: "JVM heap usage > 85% em biometria-core-api"
+          description: "O heap JVM do Core API está em {{ $value | humanizePercentage }} de uso. Risco de OOM."
+          dashboard: "http://localhost:3000/d/vivo-biometria-poc?viewPanel=20"
+
+      - alert: SoapRequestsZero
+        expr: sum(rate(soap_requests_total[5m])) == 0 and up{job="biometria-legacy-soap"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          squad: integração
+        annotations:
+          summary: "Legacy SOAP UP mas sem receber requisições por 5 minutos"
+          description: "O serviço SOAP está UP mas não recebe nenhuma chamada. Verifique se o Core API está roteando corretamente."
