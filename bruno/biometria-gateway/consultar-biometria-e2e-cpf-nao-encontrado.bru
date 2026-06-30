@@ -1,0 +1,23 @@
+meta {
+  name: Consultar biometria E2E CPF nao encontrado
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/v1/biometria/00000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Correlation-Id: test-correlation-id-003
+}
+
+assert {
+  res.status: eq 404
+}

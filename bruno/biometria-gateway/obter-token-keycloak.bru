@@ -1,0 +1,26 @@
+meta {
+  name: Obter token Keycloak
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{keycloakUrl}}/realms/vivo-poc/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+}
+
+body:form-urlencoded {
+  grant_type: client_credentials
+  client_id: parceiro-externo
+  client_secret: parceiro-externo-secret
+  scope: biometria:read
+}
+
+assert {
+  res.status: eq 200
+}

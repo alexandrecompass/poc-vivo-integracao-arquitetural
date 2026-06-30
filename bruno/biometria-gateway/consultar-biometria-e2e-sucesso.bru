@@ -1,0 +1,24 @@
+meta {
+  name: Consultar biometria E2E sucesso
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/biometria/52998224725
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-Correlation-Id: test-correlation-id-001
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains biometriaDisponivel
+}

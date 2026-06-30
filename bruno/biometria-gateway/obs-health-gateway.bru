@@ -1,0 +1,16 @@
+meta {
+  name: Observabilidade health gateway
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/actuator/health
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains UP
+}

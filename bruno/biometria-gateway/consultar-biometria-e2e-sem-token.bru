@@ -1,0 +1,19 @@
+meta {
+  name: Consultar biometria E2E sem token
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/biometria/52998224725
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-Id: test-correlation-id-002
+}
+
+assert {
+  res.status: eq 401
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Consultar biometria E2E escopo invalido
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/biometria/52998224725
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Force-Invalid-Scope: true
+}
+
+assert {
+  res.status: eq 403
+}

@@ -1,0 +1,16 @@
+meta {
+  name: Observabilidade prometheus gateway
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/actuator/prometheus
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains gateway_requests_total
+}

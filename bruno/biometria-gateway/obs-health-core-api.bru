@@ -1,0 +1,16 @@
+meta {
+  name: Observabilidade health core api
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/management/core-api/health
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains UP
+}

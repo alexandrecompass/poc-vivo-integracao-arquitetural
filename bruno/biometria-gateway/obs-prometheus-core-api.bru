@@ -1,0 +1,16 @@
+meta {
+  name: Observabilidade prometheus core api
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/management/core-api/prometheus
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains biometria_
+}
