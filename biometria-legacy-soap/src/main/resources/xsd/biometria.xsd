@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://vivo.com.br/poc/biometria"
+           xmlns:tns="http://vivo.com.br/poc/biometria"
+           elementFormDefault="qualified">
+
+  <xs:element name="ConsultarBiometriaRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="cpf" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="ConsultarBiometriaResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="cpf" type="xs:string"/>
+        <xs:element name="biometriaDisponivel" type="xs:boolean"/>
+        <xs:element name="imagemBase64" type="xs:string" minOccurs="0"/>
+        <xs:element name="origem" type="xs:string"/>
+        <xs:element name="dataConsulta" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="ConsultarBiometriaFault">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="codigo" type="xs:string"/>
+        <xs:element name="mensagem" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

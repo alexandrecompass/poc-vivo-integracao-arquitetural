@@ -1,0 +1,17 @@
+meta {
+  name: WSDL disponível
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/ws/biometria.wsdl
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains ConsultarBiometriaRequest
+  res.body: contains ConsultarBiometriaResponse
+}

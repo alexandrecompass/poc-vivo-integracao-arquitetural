@@ -1,0 +1,36 @@
+meta {
+  name: Consultar biometria - CPF não encontrado
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/ws
+  body: xml
+  auth: none
+}
+
+headers {
+  Content-Type: text/xml; charset=utf-8
+  SOAPAction: ""
+  X-Core-Secret: {{coreSecret}}
+}
+
+body:xml {
+  <?xml version="1.0" encoding="UTF-8"?>
+  <soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:tns="http://vivo.com.br/poc/biometria">
+    <soapenv:Header/>
+    <soapenv:Body>
+      <tns:ConsultarBiometriaRequest>
+        <tns:cpf>00000000000</tns:cpf>
+      </tns:ConsultarBiometriaRequest>
+    </soapenv:Body>
+  </soapenv:Envelope>
+}
+
+assert {
+  res.status: eq 500
+  res.body: contains BIOMETRIA_NAO_ENCONTRADA
+}

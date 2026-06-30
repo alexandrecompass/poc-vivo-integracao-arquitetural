@@ -1,0 +1,56 @@
+server:
+  port: 8083
+  # Em produção, o bind deve ser restrito à interface interna da rede privada
+  # (ex.: a rede Docker interna entre core-api e legacy-soap). O isolamento real
+  # de acesso vem da rede Docker (apenas o Gateway expõe porta para o host) -
+  # este "address: 0.0.0.0" é aceitável apenas para a POC rodando localmente.
+  address: 0.0.0.0
+
+spring:
+  application:
+    name: biometria-legacy-soap
+  datasource:
+    url: jdbc:h2:mem:biometriadb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.75, 0.95, 0.99
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  config: classpath:logback-spring.xml
+
+internal:
+  security:
+    # Na POC o valor fica fixo aqui; em produção deve vir de variável de
+    # ambiente (INTERNAL_CORE_SECRET) e nunca ser hardcoded em classe Java.
+    core-api-secret: ${INTERNAL_CORE_SECRET:core-api-internal-secret-poc}

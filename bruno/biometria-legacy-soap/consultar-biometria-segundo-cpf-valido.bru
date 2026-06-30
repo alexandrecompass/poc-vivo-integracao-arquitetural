@@ -1,0 +1,36 @@
+meta {
+  name: Consultar biometria - segundo CPF válido (11144477735)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/ws
+  body: xml
+  auth: none
+}
+
+headers {
+  Content-Type: text/xml; charset=utf-8
+  SOAPAction: ""
+  X-Core-Secret: {{coreSecret}}
+}
+
+body:xml {
+  <?xml version="1.0" encoding="UTF-8"?>
+  <soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:tns="http://vivo.com.br/poc/biometria">
+    <soapenv:Header/>
+    <soapenv:Body>
+      <tns:ConsultarBiometriaRequest>
+        <tns:cpf>11144477735</tns:cpf>
+      </tns:ConsultarBiometriaRequest>
+    </soapenv:Body>
+  </soapenv:Envelope>
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains biometriaDisponivel
+}
