@@ -1,0 +1,208 @@
+# =============================================================================
+# POC Vivo – Integração Arquitetural
+# .gitignore – Projeto multi-módulo Java / Spring Boot / Maven
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Maven
+# -----------------------------------------------------------------------------
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# -----------------------------------------------------------------------------
+# Java
+# -----------------------------------------------------------------------------
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
+
+# -----------------------------------------------------------------------------
+# Spring Boot
+# -----------------------------------------------------------------------------
+# Arquivos de configuração locais (nunca commitar secrets)
+**/application-local.properties
+**/application-local.yml
+**/application-local.yaml
+**/application-secret*.properties
+**/application-secret*.yml
+
+# Override de configuração de ambiente
+**/application-dev-local.yml
+**/application-dev-local.properties
+
+# -----------------------------------------------------------------------------
+# H2 Database
+# -----------------------------------------------------------------------------
+*.db
+*.mv.db
+*.trace.db
+*.lock.db
+h2-data/
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
+logs/
+*.log
+*.log.*
+log/
+
+# -----------------------------------------------------------------------------
+# WSDL e fontes geradas
+# -----------------------------------------------------------------------------
+# Arquivos Java gerados a partir de WSDL (wsimport, wsdl2java, jaxws:wsimport)
+**/generated-sources/
+**/generated-test-sources/
+# Exceto: manter o WSDL de definição do serviço SOAP fake
+# (o .wsdl em src/main/resources é controlado)
+
+# -----------------------------------------------------------------------------
+# Docker / Docker Compose
+# -----------------------------------------------------------------------------
+.docker/
+docker-data/
+# Volumes de dados locais
+keycloak-data/
+postgres-data/
+
+# Arquivos de override local do Docker Compose
+docker-compose.override.yml
+docker-compose.local.yml
+
+# -----------------------------------------------------------------------------
+# Keycloak
+# -----------------------------------------------------------------------------
+keycloak/data/
+*.keycloak.json
+realm-export-local.json
+
+# -----------------------------------------------------------------------------
+# IDEs — IntelliJ IDEA
+# -----------------------------------------------------------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# -----------------------------------------------------------------------------
+# IDEs — VS Code
+# -----------------------------------------------------------------------------
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# -----------------------------------------------------------------------------
+# IDEs — Eclipse / STS
+# -----------------------------------------------------------------------------
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# -----------------------------------------------------------------------------
+# IDEs — NetBeans
+# -----------------------------------------------------------------------------
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# -----------------------------------------------------------------------------
+# Sistema Operacional
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# -----------------------------------------------------------------------------
+# Testes e Cobertura
+# -----------------------------------------------------------------------------
+# JaCoCo
+**/jacoco.exec
+**/jacoco/
+
+# Surefire / Failsafe reports (já dentro de target/, mas explicitando)
+**/surefire-reports/
+**/failsafe-reports/
+
+# Arquivos temporários de testes de integração
+**/.testcontainers.properties
+
+# -----------------------------------------------------------------------------
+# Checkstyle / Spotless / PMD / SpotBugs
+# -----------------------------------------------------------------------------
+checkstyle-result.xml
+pmd.xml
+spotbugsXml.xml
+
+# -----------------------------------------------------------------------------
+# Postman / Insomnia (collections locais com variáveis de ambiente)
+# -----------------------------------------------------------------------------
+*postman_environment*.json
+*insomnia_environment*.json
+
+# -----------------------------------------------------------------------------
+# Secrets e credenciais
+# -----------------------------------------------------------------------------
+*.pem
+*.p12
+*.jks
+*.keystore
+*.truststore
+secrets/
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Temporários e rascunhos
+# -----------------------------------------------------------------------------
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.cache/
