@@ -1,0 +1,20 @@
+meta {
+  name: Validar CPF valido
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/cpf/52998224725/validar
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-Id: test-correlation-id-001
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains "valido\":true"
+}

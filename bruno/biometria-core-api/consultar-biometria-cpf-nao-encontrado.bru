@@ -1,0 +1,25 @@
+meta {
+  name: Consultar biometria CPF nao encontrado
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/v1/biometria/00000000000
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Gateway-Secret: {{gatewaySecret}}
+  X-Correlation-Id: test-correlation-id-008
+}
+
+assert {
+  res.status: eq 404
+  res.body: contains BIOMETRIA_NAO_ENCONTRADA
+}

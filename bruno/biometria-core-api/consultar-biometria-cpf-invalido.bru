@@ -1,0 +1,25 @@
+meta {
+  name: Consultar biometria CPF invalido
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/v1/biometria/123
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Gateway-Secret: {{gatewaySecret}}
+  X-Correlation-Id: test-correlation-id-007
+}
+
+assert {
+  res.status: eq 400
+  res.body: contains CPF_INVALIDO
+}
