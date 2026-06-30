@@ -1,0 +1,11 @@
+spring:
+  h2:
+    console:
+      enabled: true
+      # Acesse em http://localhost:8083/h2-console
+      # JDBC URL: jdbc:h2:mem:biometriadb  |  User: sa  |  Password: (vazio)
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
