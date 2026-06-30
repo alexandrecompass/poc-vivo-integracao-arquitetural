@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.2.5</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>br.com.vivo.poc</groupId>
+  <artifactId>poc-vivo-integracao-arquitetural</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>poc-vivo-integracao-arquitetural</name>
+  <description>POC técnica - Arquiteto de Integração Vivo - Biometria Facial</description>
+
+  <modules>
+    <module>biometria-legacy-soap</module>
+<!--    <module>biometria-core-api</module>-->
+<!--    <module>biometria-gateway</module>-->
+  </modules>
+
+  <properties>
+    <java.version>17</java.version>
+    <spring-cloud.version>2023.0.1</spring-cloud.version>
+    <!-- jacoco.coverage.minimum: cada módulo declara o próprio valor (ver AGENTS.md seção 24) -->
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>17</source>
+            <target>17</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.8.11</version>
+          <executions>
+            <execution>
+              <id>prepare-agent</id>
+              <goals>
+                <goal>prepare-agent</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>report</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>report</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>check</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <rule>
+                    <element>BUNDLE</element>
+                    <limits>
+                      <limit>
+                        <counter>LINE</counter>
+                        <value>COVEREDRATIO</value>
+                        <minimum>${jacoco.coverage.minimum}</minimum>
+                      </limit>
+                    </limits>
+                  </rule>
+                </rules>
+                <excludes>
+                  <exclude>**/*Application.*</exclude>
+                  <exclude>**/*Config.*</exclude>
+                  <exclude>**/*Seed*.*</exclude>
+                  <exclude>**/dto/**</exclude>
+                </excludes>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+</project>
