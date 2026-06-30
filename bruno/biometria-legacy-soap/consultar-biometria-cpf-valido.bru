@@ -1,0 +1,37 @@
+meta {
+  name: Consultar biometria - CPF válido (52998224725)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/ws
+  body: xml
+  auth: none
+}
+
+headers {
+  Content-Type: text/xml; charset=utf-8
+  SOAPAction: ""
+  X-Core-Secret: {{coreSecret}}
+}
+
+body:xml {
+  <?xml version="1.0" encoding="UTF-8"?>
+  <soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:tns="http://vivo.com.br/poc/biometria">
+    <soapenv:Header/>
+    <soapenv:Body>
+      <tns:ConsultarBiometriaRequest>
+        <tns:cpf>52998224725</tns:cpf>
+      </tns:ConsultarBiometriaRequest>
+    </soapenv:Body>
+  </soapenv:Envelope>
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains biometriaDisponivel
+  res.body: contains LEGADO_SOAP
+}
